@@ -389,7 +389,19 @@ function enrichmentBody(apiKey?: string) {
 }
 
 function hasUsableKey(key?: string) {
-  return Boolean(key && !/(full_key|new_key|placeholder|your_|here|example)/i.test(key));
+  if (!key) return false;
+  const trimmed = key.trim();
+  // Reject only clearly-templated values. Patterns are specific/anchored so a real
+  // key that merely contains a substring like "here" or "example" is not rejected.
+  const looksTemplated =
+    /^<.*>$/.test(trimmed) ||
+    /(full_key|new_key|changeme|placeholder|example_key|your[_-]?key)/i.test(trimmed) ||
+    /[_-]here\b/i.test(trimmed);
+  if (looksTemplated) {
+    console.warn("[fiber] FIBER_API_KEY is set but looks like a placeholder — running in sample mode.");
+    return false;
+  }
+  return true;
 }
 
 function asRecord(value: unknown): Record<string, unknown> {

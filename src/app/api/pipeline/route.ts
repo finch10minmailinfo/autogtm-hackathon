@@ -2,6 +2,10 @@ import { NextRequest, NextResponse } from "next/server";
 import { confirmFiberAudience, runPipeline } from "@/lib/pipeline";
 import { Id } from "convex/_generated/dataModel";
 
+// The pipeline runs the full multi-agent flow synchronously in this request;
+// real Fiber polling can take minutes, so lift the per-route timeout ceiling.
+export const maxDuration = 300;
+
 export async function POST(req: NextRequest) {
   try {
     const { campaignId, action } = (await req.json()) as {

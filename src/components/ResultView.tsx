@@ -63,6 +63,37 @@ export function ResultView({ campaignId, onReset }: Props) {
     await approveAllOutreach({ campaignId, approvedBy: "user" });
   }
 
+  if (campaign === undefined) {
+    return (
+      <div className="flex min-h-[40vh] items-center justify-center">
+        <p className="mono text-xs text-neutral-500 animate-pulse">loading campaign…</p>
+      </div>
+    );
+  }
+
+  if (campaign?.status === "failed") {
+    return (
+      <div className="mx-auto max-w-lg space-y-5 rounded-2xl border border-red-900/50 bg-red-950/20 p-8 text-center">
+        <p className="mono text-xs text-red-400">PIPELINE FAILED</p>
+        <h2 className="text-xl font-semibold text-red-100">The growth pod hit an error</h2>
+        <p className="text-sm text-red-200/80 whitespace-pre-wrap">
+          {campaign.errorMessage ?? "An unexpected error stopped the pipeline before it finished."}
+        </p>
+        <p className="text-xs text-neutral-500">
+          Tip: the pipeline runs end-to-end in sample mode with no API keys. Missing or invalid keys
+          fall back to sample data rather than failing — a hard failure usually means a network or
+          Convex connection issue.
+        </p>
+        <button
+          onClick={onReset}
+          className="w-full rounded-lg bg-[var(--orange)] px-4 py-3 text-sm font-semibold text-black"
+        >
+          Start a new campaign
+        </button>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-8">
       <header className="flex items-start justify-between gap-4">
@@ -194,7 +225,7 @@ export function ResultView({ campaignId, onReset }: Props) {
           <div className="rounded-xl border border-amber-900/40 bg-amber-950/20 p-4 text-xs text-amber-200">
             {isB2B
               ? "Human-in-the-loop: outreach drafts are for YOU to copy & send from your own LinkedIn. Never auto-DM strangers."
-              : "Human-in-the-loop: nothing publishes without your approval. Posts only go to your own connected account via Composio OAuth."}
+              : "Human-in-the-loop: nothing publishes automatically. Approving stages the post for review; connect Composio OAuth to publish it to your own account."}
           </div>
 
           <div className="space-y-2">

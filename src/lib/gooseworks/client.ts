@@ -124,8 +124,8 @@ export class GooseworksClient {
             skillUsed: GOOSEWORKS_SKILLS.adGeneration,
           };
         }
-      } catch {
-        // fall through to OpenAI fallback
+      } catch (err) {
+        console.warn("[gooseworks] Fal gpt-image-1 failed, falling back to OpenAI:", err);
       }
     }
 
@@ -173,18 +173,20 @@ export class GooseworksClient {
     }
 
     const openai = new OpenAI({ apiKey });
-    const size = input.platform === "linkedin" ? "1792x1024" : "1024x1792";
+    // gpt-image-1 only accepts 1024x1024 / 1024x1536 / 1536x1024 (NOT the 1792 sizes).
+    const size = input.platform === "linkedin" ? "1536x1024" : "1024x1536";
     let imageBase64: string | null = null;
 
     try {
       const image = await openai.images.generate({
         model: "gpt-image-1",
         prompt: input.imagePrompt,
-        size: size as "1024x1792" | "1792x1024",
+        size: size as "1024x1536" | "1536x1024",
         quality: "medium",
       });
       imageBase64 = image.data?.[0]?.b64_json ?? null;
-    } catch {
+    } catch (err) {
+      console.error("[gooseworks] OpenAI gpt-image-1 fallback failed:", err);
       imageBase64 = null;
     }
 

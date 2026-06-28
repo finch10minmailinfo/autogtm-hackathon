@@ -58,7 +58,7 @@ a:focus-visible {
 }
 
 .mono {
-  font-family: "Inter", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
   letter-spacing: 0.08em;
   text-transform: uppercase;
 }
