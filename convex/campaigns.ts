@@ -90,9 +90,7 @@ export const approvePost = mutation({
       ctx,
       args.campaignId,
       "distribution",
-      process.env.COMPOSIO_API_KEY
-        ? `Published to ${args.platform}`
-        : `Staged to ${args.platform} (demo — connect Composio for live publish)`,
+      `Staged to ${args.platform} — review and post from your own account (human-in-the-loop)`,
       "success"
     );
 
@@ -435,7 +433,7 @@ export const saveBrandKit = mutation({
     primaryColor: v.string(),
     accentColor: v.optional(v.string()),
     productPhotos: v.array(v.string()),
-    source: v.union(v.literal("gooseworks"), v.literal("local")),
+    source: v.literal("local"),
   },
   handler: async (ctx, args) => {
     await ctx.db.insert("brandKits", args);
@@ -456,7 +454,7 @@ export const saveCreative = mutation({
     platform: v.union(v.literal("instagram"), v.literal("linkedin")),
     qcStatus: v.union(v.literal("pass"), v.literal("fail"), v.literal("needs_human")),
     qcReportUrl: v.optional(v.string()),
-    source: v.union(v.literal("gooseworks"), v.literal("fallback")),
+    source: v.literal("fallback"),
     format: v.union(v.literal("image"), v.literal("video")),
     brandKitId: v.optional(v.string()),
   },

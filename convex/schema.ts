@@ -41,7 +41,7 @@ export default defineSchema({
     primaryColor: v.string(),
     accentColor: v.optional(v.string()),
     productPhotos: v.array(v.string()),
-    source: v.union(v.literal("gooseworks"), v.literal("local")),
+    source: v.literal("local"),
   }).index("by_campaign", ["campaignId"]),
 
   signals: defineTable({
@@ -124,7 +124,7 @@ export default defineSchema({
       v.union(v.literal("pass"), v.literal("fail"), v.literal("needs_human"))
     ),
     qcReportUrl: v.optional(v.string()),
-    source: v.optional(v.union(v.literal("gooseworks"), v.literal("fallback"))),
+    source: v.optional(v.literal("fallback")),
     format: v.optional(v.union(v.literal("image"), v.literal("video"))),
     brandKitId: v.optional(v.string()),
   }).index("by_campaign", ["campaignId"]),

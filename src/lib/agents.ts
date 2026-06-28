@@ -1,13 +1,4 @@
-import OpenAI from "openai";
-import FirecrawlApp from "@mendable/firecrawl-js";
-import { FiberClient } from "@/lib/fiber/client";
-import { GooseworksClient } from "@/lib/gooseworks/client";
-
-function getOpenAI() {
-  const apiKey = process.env.OPENAI_API_KEY;
-  if (!apiKey) return null;
-  return new OpenAI({ apiKey });
-}
+import { OrangeSliceClient, generateStructured, hasOrangeSliceKey } from "@/lib/orangeslice/client";
 
 export type MarketPulseOutput = {
   competitors: string[];
@@ -33,6 +24,55 @@ const SAMPLE_MARKET: MarketPulseOutput = {
   quotes: [{ text: "I wanted something that just works.", source_url: "sample://insights" }],
 };
 
+const MARKET_SCHEMA = {
+  type: "object",
+  properties: {
+    competitors: { type: "array", items: { type: "string" } },
+    reviews_scanned: { type: "number" },
+    why_buy: {
+      type: "array",
+      items: {
+        type: "object",
+        properties: { text: { type: "string" }, source_url: { type: "string" }, competitor: { type: "string" } },
+        required: ["text", "source_url"],
+      },
+    },
+    why_not: {
+      type: "array",
+      items: {
+        type: "object",
+        properties: { text: { type: "string" }, source_url: { type: "string" }, competitor: { type: "string" } },
+        required: ["text", "source_url"],
+      },
+    },
+    creative_gaps: {
+      type: "array",
+      items: {
+        type: "object",
+        properties: { text: { type: "string" }, source_url: { type: "string" }, competitor: { type: "string" } },
+        required: ["text", "source_url"],
+      },
+    },
+    buying_intent: {
+      type: "array",
+      items: {
+        type: "object",
+        properties: { text: { type: "string" }, source_url: { type: "string" }, company: { type: "string" } },
+        required: ["text", "source_url"],
+      },
+    },
+    quotes: {
+      type: "array",
+      items: {
+        type: "object",
+        properties: { text: { type: "string" }, source_url: { type: "string" } },
+        required: ["text", "source_url"],
+      },
+    },
+  },
+  required: ["competitors", "reviews_scanned", "why_buy", "why_not", "quotes"],
+} as const;
+
 export async function runMarketPulse(input: {
   product: string;
   description: string;
@@ -41,127 +81,64 @@ export async function runMarketPulse(input: {
   mode?: "b2c" | "b2b";
   icp?: string;
 }) {
-  const apiKey = process.env.FIRECRAWL_API_KEY;
-  let scraped = "";
-  let isSample = true;
-
-  if (apiKey) {
-    try {
-      const firecrawl = new FirecrawlApp({ apiKey });
-      const search = await firecrawl.search(`${input.product} ${input.description} reviews`, { limit: 3 });
-      const results = search.web ?? [];
-      const urls = results
-        .map((r) => ("url" in r ? r.url : undefined))
-        .filter((u): u is string => Boolean(u))
-        .slice(0, 3);
-      const chunks: string[] = [];
-      for (const url of urls) {
-        const page = await firecrawl.scrape(url, { formats: ["markdown"] });
-        const md = "markdown" in page ? (page.markdown ?? "") : "";
-        chunks.push(`SOURCE: ${url}\n${md.slice(0, 4000)}`);
-      }
-      scraped = chunks.join("\n\n---\n\n");
-      isSample = chunks.length === 0;
-    } catch {
-      isSample = true;
-    }
-  }
-
-  if (!process.env.OPENAI_API_KEY || isSample || !scraped) {
-    const output = { ...SAMPLE_MARKET };
-    if (input.mode === "b2b") {
-      const intent = await FiberClient.fromEnv().getIntentSignals({
-        product: input.product,
-        category: input.description,
-        icp: input.icp ?? input.audience,
-      });
-      output.buying_intent = intent.signals.map((s) => ({
-        text: s.text,
-        source_url: s.source_url,
-        company: s.company,
-      }));
-    }
-    const creativeWatch = await new GooseworksClient().watchCompetitorCreatives({
-      product: input.product,
-      competitors: output.competitors ?? ["Category leaders"],
-    });
-    output.creative_gaps = creativeWatch.gaps;
-    return { output, isSample: true };
-  }
-
-  const openai = getOpenAI();
-  if (!openai) {
-    const output = { ...SAMPLE_MARKET };
-    if (input.mode === "b2b") {
-      const intent = await FiberClient.fromEnv().getIntentSignals({
-        product: input.product,
-        category: input.description,
-        icp: input.icp ?? input.audience,
-      });
-      output.buying_intent = intent.signals.map((s) => ({
-        text: s.text,
-        source_url: s.source_url,
-        company: s.company,
-      }));
-    }
-    const creativeWatch = await new GooseworksClient().watchCompetitorCreatives({
-      product: input.product,
-      competitors: output.competitors ?? ["Category leaders"],
-    });
-    output.creative_gaps = creativeWatch.gaps;
-    return { output, isSample: true };
-  }
-
-  const response = await openai.chat.completions.create({
-    model: "gpt-4o-mini",
-    response_format: { type: "json_object" },
-    messages: [
-      {
-        role: "system",
-        content:
-          'Extract why_buy and why_not from scraped text. Cite source_url for each. Return JSON: { competitors[], reviews_scanned, why_buy[{text,source_url,competitor}], why_not[{text,source_url,competitor}], quotes[{text,source_url}] }',
-      },
-      {
-        role: "user",
-        content: JSON.stringify({ ...input, scraped }),
-      },
-    ],
-  });
-
-  const parsed = JSON.parse(response.choices[0]?.message?.content ?? "{}") as MarketPulseOutput;
-
-  if (input.mode === "b2b") {
-    const intent = await FiberClient.fromEnv().getIntentSignals({
-      product: input.product,
-      category: input.description,
-      icp: input.icp ?? input.audience,
-    });
-    parsed.buying_intent = intent.signals.map((s) => ({
-      text: s.text,
-      source_url: s.source_url,
-      company: s.company,
-    }));
-  }
-
-  const creativeWatch = await new GooseworksClient().watchCompetitorCreatives({
+  // Real buyer voice comes from Orange Slice webSearch across Reddit + Twitter/X + LinkedIn.
+  // Key present + total search failure → error propagates so the pipeline reports an honest
+  // failure (never fabricated data). No key → clearly-labeled sample mode below.
+  const scrape = await new OrangeSliceClient().scrapeMarketSignals({
     product: input.product,
-    competitors: parsed.competitors ?? [input.product],
-    angleHeadline: undefined,
+    description: input.description,
+    differentiator: input.differentiator,
   });
-  parsed.creative_gaps = creativeWatch.gaps;
 
-  return {
-    output: parsed,
-    isSample: false,
-  };
+  if (scrape.isSample || scrape.chunks.length === 0 || !hasOrangeSliceKey()) {
+    return { output: { ...SAMPLE_MARKET } as MarketPulseOutput, isSample: true };
+  }
+
+  const intentInstruction =
+    input.mode === "b2b"
+      ? " Also populate buying_intent with any hiring, funding, tooling-migration or evaluation signals found in the text (cite source_url; include company when stated)."
+      : "";
+
+  const parsed = await generateStructured<MarketPulseOutput>({
+    system:
+      "You are a market researcher. The user gives you real search results from Reddit, Twitter/X and LinkedIn, each prefixed with its SOURCE URL. " +
+      "Extract genuine buyer sentiment ONLY from the provided text. Every item MUST cite the exact source_url it came from — never invent a URL or a quote. " +
+      "If a field has no support in the text, return an empty array for it." +
+      intentInstruction,
+    prompt: JSON.stringify({
+      product: input.product,
+      description: input.description,
+      audience: input.audience,
+      differentiator: input.differentiator,
+      channels_scraped: scrape.channels,
+      sources_scraped: scrape.sourceCount,
+      scraped: scrape.text,
+    }),
+    schema: MARKET_SCHEMA,
+  });
+
+  if (!parsed.reviews_scanned) parsed.reviews_scanned = scrape.sourceCount;
+
+  return { output: parsed, isSample: false };
 }
+
+const DEMAND_SCHEMA = {
+  type: "object",
+  properties: {
+    gap: { type: "string" },
+    angle_headline: { type: "string" },
+    supporting_reason: { type: "string" },
+    target_emotion: { type: "string" },
+  },
+  required: ["gap", "angle_headline", "supporting_reason", "target_emotion"],
+} as const;
 
 export async function runDemandGap(input: {
   product: string;
   differentiator: string;
   signals: Array<{ type: string; text: string; sourceUrl: string; competitor: string }>;
 }) {
-  if (!process.env.OPENAI_API_KEY) {
+  if (!hasOrangeSliceKey()) {
     return {
       gap: "Buyers want proof before promise.",
       angle_headline: "Proof Before Promise",
@@ -170,36 +147,25 @@ export async function runDemandGap(input: {
     };
   }
 
-  const openai = getOpenAI();
-  if (!openai) {
-    return {
-      gap: "Buyers want proof before promise.",
-      angle_headline: "Proof Before Promise",
-      supporting_reason: "Lead with the outcome your differentiator guarantees.",
-      target_emotion: "confidence",
-    };
-  }
-
-  const response = await openai.chat.completions.create({
-    model: "gpt-4o-mini",
-    response_format: { type: "json_object" },
-    messages: [
-      {
-        role: "system",
-        content:
-          "Identify the single highest-leverage gap. Return JSON: { gap, angle_headline (max 6 words), supporting_reason, target_emotion }",
-      },
-      { role: "user", content: JSON.stringify(input) },
-    ],
-  });
-
-  return JSON.parse(response.choices[0]?.message?.content ?? "{}") as {
+  return generateStructured<{
     gap: string;
     angle_headline: string;
     supporting_reason: string;
     target_emotion: string;
-  };
+  }>({
+    system:
+      "Identify the single highest-leverage demand gap from the provided verified signals. " +
+      "angle_headline must be max 6 words.",
+    prompt: JSON.stringify(input),
+    schema: DEMAND_SCHEMA,
+  });
 }
+
+const OUTREACH_SCHEMA = {
+  type: "object",
+  properties: { message: { type: "string" } },
+  required: ["message"],
+} as const;
 
 export async function runPersonalizedOutreach(input: {
   product: string;
@@ -216,8 +182,7 @@ export async function runPersonalizedOutreach(input: {
 }) {
   const drafts: Array<{ prospectLinkedinUrl: string; draftMessage: string }> = [];
 
-  const openai = getOpenAI();
-  if (!openai) {
+  if (!hasOrangeSliceKey()) {
     for (const p of input.prospects) {
       drafts.push({
         prospectLinkedinUrl: p.linkedinUrl,
@@ -228,29 +193,19 @@ export async function runPersonalizedOutreach(input: {
   }
 
   for (const p of input.prospects.slice(0, 8)) {
-    const response = await openai.chat.completions.create({
-      model: "gpt-4o-mini",
-      messages: [
-        {
-          role: "system",
-          content:
-            "Write a short LinkedIn outreach message (under 120 words). Personalize using prospect enrichment. Lead with their intent signal. End with a soft CTA. No spam. Return only the message text.",
-        },
-        {
-          role: "user",
-          content: JSON.stringify({
-            product: input.product,
-            angle: input.angleHeadline,
-            differentiator: input.differentiator,
-            prospect: p,
-          }),
-        },
-      ],
+    const result = await generateStructured<{ message: string }>({
+      system:
+        "Write a short LinkedIn outreach message (under 120 words). Personalize using prospect enrichment. " +
+        "Lead with their intent signal. End with a soft CTA. No spam. Return the message in the 'message' field.",
+      prompt: JSON.stringify({
+        product: input.product,
+        angle: input.angleHeadline,
+        differentiator: input.differentiator,
+        prospect: p,
+      }),
+      schema: OUTREACH_SCHEMA,
     });
-    drafts.push({
-      prospectLinkedinUrl: p.linkedinUrl,
-      draftMessage: response.choices[0]?.message?.content?.trim() ?? "",
-    });
+    drafts.push({ prospectLinkedinUrl: p.linkedinUrl, draftMessage: result.message?.trim() ?? "" });
   }
 
   return drafts;

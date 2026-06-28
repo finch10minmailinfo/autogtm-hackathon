@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { confirmFiberAudience, runPipeline } from "@/lib/pipeline";
+import { confirmAudienceEnrichment, runPipeline } from "@/lib/pipeline";
 import { Id } from "convex/_generated/dataModel";
 
 // The pipeline runs the full multi-agent flow synchronously in this request;
@@ -17,7 +17,7 @@ export async function POST(req: NextRequest) {
     }
 
     if (action === "confirm_fiber_enrichment") {
-      await confirmFiberAudience(campaignId);
+      await confirmAudienceEnrichment(campaignId);
     } else {
       await runPipeline(campaignId);
     }

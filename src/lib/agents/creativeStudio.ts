@@ -1,11 +1,5 @@
-import { GooseworksClient } from "@/lib/gooseworks/client";
-import OpenAI from "openai";
-
-function getOpenAI() {
-  const apiKey = process.env.OPENAI_API_KEY;
-  if (!apiKey) return null;
-  return new OpenAI({ apiKey });
-}
+import { buildBrandKit, generateAdImage, verifyAd, type BrandKitResult } from "@/lib/creative";
+import { generateStructured, hasOrangeSliceKey } from "@/lib/orangeslice/client";
 
 export type CreativeStudioResult = {
   creative: {
@@ -19,10 +13,23 @@ export type CreativeStudioResult = {
   imageBase64: string | null;
   qcStatus: "pass" | "fail" | "needs_human";
   qcReportUrl: string;
-  source: "gooseworks" | "fallback";
+  source: "fallback";
   format: "image" | "video";
   brandKitId: string;
 };
+
+const CAPTION_SCHEMA = {
+  type: "object",
+  properties: {
+    image_prompt: { type: "string" },
+    caption: { type: "string" },
+    cta: { type: "string" },
+    hashtags: { type: "array", items: { type: "string" } },
+    post_time: { type: "string" },
+    platform: { type: "string", enum: ["instagram", "linkedin"] },
+  },
+  required: ["image_prompt", "caption", "cta", "hashtags"],
+} as const;
 
 export async function runCreativeStudio(input: {
   product: string;
@@ -32,66 +39,54 @@ export async function runCreativeStudio(input: {
   angleHeadline: string;
   platform: "instagram" | "linkedin" | "both";
   priceTier: string;
-  brandKit?: Awaited<ReturnType<GooseworksClient["buildBrandKit"]>>;
+  brandKit?: BrandKitResult;
 }): Promise<CreativeStudioResult> {
   const targetPlatform = input.platform === "both" ? "instagram" : input.platform;
-  const goose = new GooseworksClient();
 
   const brandKit =
     input.brandKit ??
-    (await goose.buildBrandKit({
+    buildBrandKit({
       product: input.product,
       description: input.description,
       audience: input.audience,
       differentiator: input.differentiator,
       angleHeadline: input.angleHeadline,
       priceTier: input.priceTier,
-    }));
+    });
 
-  const openai = getOpenAI();
   let caption = `${input.angleHeadline} — built for ${input.audience}. ${input.description}`;
   let cta = "Learn more";
   let hashtags = ["#launch", "#startup", "#marketing"];
   let imagePrompt = `On-brand social ad for ${input.product}, angle '${input.angleHeadline}'. ${brandKit.voice}. Bold product hero, single CTA. No real logos or people.`;
 
-  if (openai) {
-    const captionResponse = await openai.chat.completions.create({
-      model: "gpt-4o-mini",
-      response_format: { type: "json_object" },
-      messages: [
-        {
-          role: "system",
-          content: `Write a ${targetPlatform} caption using brand kit context. Return JSON: { image_prompt, caption, cta, hashtags[], post_time, platform }`,
-        },
-        {
-          role: "user",
-          content: JSON.stringify({ ...input, brandKit, platform: targetPlatform }),
-        },
-      ],
-    });
-    const parsed = JSON.parse(captionResponse.choices[0]?.message?.content ?? "{}") as {
+  // Copy is written by Orange Slice AI; image is rendered by OpenAI gpt-image-1.
+  if (hasOrangeSliceKey()) {
+    const parsed = await generateStructured<{
       image_prompt?: string;
       caption?: string;
       cta?: string;
       hashtags?: string[];
       post_time?: string;
       platform?: "instagram" | "linkedin";
-    };
+    }>({
+      system: `Write a ${targetPlatform} caption using the brand kit context. Return image_prompt, caption, cta, hashtags[], post_time, platform.`,
+      prompt: JSON.stringify({ ...input, brandKit, platform: targetPlatform }),
+      schema: CAPTION_SCHEMA,
+    });
     caption = parsed.caption ?? caption;
     cta = parsed.cta ?? cta;
     hashtags = parsed.hashtags ?? hashtags;
     imagePrompt = parsed.image_prompt ?? imagePrompt;
   }
 
-
-  const ad = await goose.generateAd({
+  const ad = await generateAdImage({
     brandKit,
     angleHeadline: input.angleHeadline,
     platform: targetPlatform,
     imagePrompt,
   });
 
-  const qc = await goose.verifyAd({
+  const qc = verifyAd({
     imageBase64: ad.imageBase64,
     platform: targetPlatform,
     product: input.product,

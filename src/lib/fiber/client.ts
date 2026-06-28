@@ -10,9 +10,12 @@ import {
   getRateLimits,
   listAvailableTrackerRules,
   nlpSearchParse,
+  postSearchByKeywords,
   previewTrackerSignal,
+  redditSearch,
   slushieRun,
   triggerEnrichment,
+  twitterSearch,
   updateAudienceSearchParams,
 } from "@fiberai/sdk";
 import type {
@@ -21,6 +24,8 @@ import type {
   FiberIntentResult,
   FiberIntentSignal,
   FiberProspect,
+  FiberScrapeChunk,
+  FiberScrapeResult,
 } from "@/lib/fiber/types";
 
 const MAX_PROSPECTS = Number(process.env.FIBER_MAX_PROSPECTS ?? 8);
@@ -135,6 +140,133 @@ export class FiberClient {
     }
   }
 
+  /**
+   * Pull real buyer-voice signals from Reddit, Twitter/X, and LinkedIn via Fiber.
+   * Returns scraped text chunks (each tagged with its real source URL) for the
+   * Market Pulse agent to extract why_buy/why_not from. No fabrication: if a key
+   * is present and every channel fails, the error propagates to the caller so the
+   * pipeline can surface an honest failure instead of injecting sample data.
+   */
+  async scrapeMarketSignals(input: {
+    product: string;
+    description: string;
+    audience: string;
+    differentiator: string;
+  }): Promise<FiberScrapeResult> {
+    if (!hasUsableKey(this.apiKey)) {
+      return { chunks: [], text: "", sourceCount: 0, channels: [], isSample: true };
+    }
+
+    const product = input.product.trim();
+    const redditQuery = `${product} review OR complaint OR alternative OR switching`;
+    const twitterQuery = `${product} (frustrated OR alternative OR switching OR hate OR love) -is:retweet`;
+    const linkedinKeywords = [product, input.differentiator].filter(Boolean).join(", ");
+
+    const channelResults = await Promise.allSettled([
+      this.scrapeReddit(redditQuery),
+      this.scrapeTwitter(twitterQuery),
+      this.scrapeLinkedinPosts(linkedinKeywords),
+    ]);
+
+    const chunks: FiberScrapeChunk[] = [];
+    let anyFulfilled = false;
+    for (const result of channelResults) {
+      if (result.status === "fulfilled") {
+        anyFulfilled = true;
+        chunks.push(...result.value);
+      }
+    }
+
+    // Key present but every channel threw (network/credits/API) — do not fake it.
+    if (!anyFulfilled) {
+      const firstError = channelResults.find(
+        (r): r is PromiseRejectedResult => r.status === "rejected"
+      );
+      throw new Error(
+        firstError instanceof Object && "reason" in firstError && firstError.reason instanceof Error
+          ? firstError.reason.message
+          : "Fiber market scrape failed on every channel"
+      );
+    }
+
+    const trimmed = chunks.slice(0, 12);
+    const text = trimmed
+      .map((c) => `SOURCE (${c.channel}): ${c.source_url}\n${c.text.slice(0, 1200)}`)
+      .join("\n\n---\n\n");
+    const channels = Array.from(new Set(trimmed.map((c) => c.channel)));
+
+    return {
+      chunks: trimmed,
+      text,
+      sourceCount: trimmed.length,
+      channels,
+      isSample: trimmed.length === 0,
+    };
+  }
+
+  private async scrapeReddit(query: string): Promise<FiberScrapeChunk[]> {
+    await this.ensureCredits("reddit/search");
+    const res = await this.call(redditSearch as SdkFunction, {
+      body: { apiKey: this.apiKey, query, sort: "relevance", timeframe: "year" },
+    });
+    const posts = extractArray(asRecord(res.output).posts);
+    return posts.slice(0, 6).map((row) => {
+      const post = asRecord(row);
+      const title = stringValue(post.title) ?? "";
+      const body = stringValue(post.bodyText) ?? "";
+      const subreddit = stringValue(post.subreddit);
+      return {
+        channel: "reddit" as const,
+        source_url:
+          stringValue(post.permalink) ??
+          stringValue(post.url) ??
+          (stringValue(post.id) ? `https://reddit.com/${post.id}` : "fiber://reddit/search"),
+        text: [subreddit ? `r/${subreddit}` : "", title, body].filter(Boolean).join(" — "),
+      };
+    });
+  }
+
+  private async scrapeTwitter(query: string): Promise<FiberScrapeChunk[]> {
+    await this.ensureCredits("twitter/search");
+    const res = await this.call(twitterSearch as SdkFunction, {
+      body: { apiKey: this.apiKey, query },
+    });
+    const tweets = extractArray(asRecord(res.output).tweets);
+    return tweets.slice(0, 6).map((row) => {
+      const tweet = asRecord(row);
+      const handle = stringValue(tweet.handle);
+      const id = stringValue(tweet.id);
+      return {
+        channel: "twitter" as const,
+        source_url:
+          handle && id
+            ? `https://x.com/${handle}/status/${id}`
+            : handle
+              ? `https://x.com/${handle}`
+              : "fiber://twitter/search",
+        text: stringValue(tweet.text) ?? "",
+      };
+    });
+  }
+
+  private async scrapeLinkedinPosts(keywords: string): Promise<FiberScrapeChunk[]> {
+    await this.ensureCredits("linkedin/posts/search");
+    const res = await this.call(postSearchByKeywords as SdkFunction, {
+      body: { apiKey: this.apiKey, keywords, recency: "Year" },
+    });
+    const posts = extractArray(asRecord(res.output).posts);
+    return posts.slice(0, 6).map((row) => {
+      const post = asRecord(row);
+      const author = asRecord(post.author);
+      const authorName = stringValue(author.name);
+      return {
+        channel: "linkedin" as const,
+        source_url: stringValue(post.postUrl) ?? "fiber://linkedin/posts/search",
+        text: [authorName, stringValue(post.content)].filter(Boolean).join(": "),
+      };
+    });
+  }
+
   async prepareAudience(input: {
     icp: string;
     angleHeadline: string;
@@ -220,8 +352,11 @@ export class FiberClient {
         chargeInfo: estimate.chargeInfo,
         isSample: false,
       };
-    } catch {
-      return this.sampleEstimate(input.icp);
+    } catch (error) {
+      // Key present: surface the real failure instead of masking it as sample data.
+      throw error instanceof Error
+        ? error
+        : new Error("Fiber audience preparation failed");
     }
   }
 
@@ -274,12 +409,13 @@ export class FiberClient {
         .filter((prospect) => prospect.name && prospect.company && prospect.source_url)
     ).slice(0, MAX_PROSPECTS);
 
+    // Key present: return the real enriched list as-is (even if empty). No sample injection.
     return {
-      prospects: prospects.length > 0 ? prospects : SAMPLE_PROSPECTS,
-      list_size: prospects.length > 0 ? prospects.length : SAMPLE_PROSPECTS.length,
+      prospects,
+      list_size: prospects.length,
       estimated_credits: input.estimatedCredits,
       charge_info: triggered.chargeInfo,
-      isSample: prospects.length === 0,
+      isSample: false,
     };
   }
 
@@ -441,6 +577,10 @@ function deepNumber(value: unknown, keys: string[], depth = 0): number | undefin
     }
   }
   return undefined;
+}
+
+function extractArray(value: unknown): unknown[] {
+  return Array.isArray(value) ? value : [];
 }
 
 function extractRows(value: unknown): Array<Record<string, unknown>> {

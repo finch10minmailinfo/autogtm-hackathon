@@ -4,7 +4,7 @@ import { Id } from "convex/_generated/dataModel";
 import { enrichAudience, prepareAudience } from "@/lib/agents/audienceFinder";
 import { runCreativeStudio } from "@/lib/agents/creativeStudio";
 import { runDemandGap, runMarketPulse, runPersonalizedOutreach } from "@/lib/agents";
-import { GooseworksClient } from "@/lib/gooseworks/client";
+import { buildBrandKit } from "@/lib/creative";
 
 type CampaignForPipeline = {
   product: string;
@@ -76,8 +76,8 @@ export async function runPipeline(campaignId: Id<"campaigns">) {
       campaignId,
       agent: "market",
       message: isB2B
-        ? "Market Pulse — Firecrawl reviews + Fiber intent signals + Gooseworks competitor-ad-intelligence..."
-        : "Market Pulse — Firecrawl reviews + Gooseworks competitor creative watch...",
+        ? "Market Pulse — Orange Slice webSearch across Reddit + X + LinkedIn (buyer voice + buying intent)..."
+        : "Market Pulse — Orange Slice webSearch across Reddit + X + LinkedIn buyer voice...",
       level: "info",
     });
 
@@ -145,17 +145,17 @@ export async function runPipeline(campaignId: Id<"campaigns">) {
   }
 }
 
-export async function confirmFiberAudience(campaignId: Id<"campaigns">) {
+export async function confirmAudienceEnrichment(campaignId: Id<"campaigns">) {
   const convex = getConvex();
   const campaign = await convex.query(api.campaigns.get, { campaignId });
   if (!campaign) throw new Error("Campaign not found");
-  if ((campaign.mode ?? "b2c") !== "b2b") throw new Error("Fiber enrichment is only used in B2B mode");
+  if ((campaign.mode ?? "b2c") !== "b2b") throw new Error("Audience enrichment is only used in B2B mode");
 
   const demand = await convex.query(api.campaigns.getDemand, { campaignId });
   if (!demand) throw new Error("Demand angle not ready");
 
   const audienceEstimate = await convex.query(api.campaigns.getAudience, { campaignId });
-  if (!audienceEstimate) throw new Error("Fiber audience estimate not ready");
+  if (!audienceEstimate) throw new Error("Audience estimate not ready");
 
   try {
     await convex.mutation(api.campaigns.setStatus, { campaignId, status: "building_audience" });
@@ -167,7 +167,7 @@ export async function confirmFiberAudience(campaignId: Id<"campaigns">) {
     await convex.mutation(api.campaigns.appendLog, {
       campaignId,
       agent: "audience",
-      message: `User approved Fiber enrichment estimate (${audienceEstimate.estimatedCredits} credits). Polling every 30s...`,
+      message: `User approved enrichment estimate (${audienceEstimate.estimatedCredits} credits). Pulling real prospects + contacts from Orange Slice...`,
       level: "info",
     });
 
@@ -194,7 +194,7 @@ export async function confirmFiberAudience(campaignId: Id<"campaigns">) {
     await convex.mutation(api.campaigns.setStatus, {
       campaignId,
       status: "failed",
-      errorMessage: error instanceof Error ? error.message : "Fiber enrichment failed",
+      errorMessage: error instanceof Error ? error.message : "Audience enrichment failed",
     });
     throw error;
   }
@@ -210,7 +210,7 @@ async function prepareB2BAudience(
   await convex.mutation(api.campaigns.appendLog, {
     campaignId,
     agent: "audience",
-    message: "Audience Finder (Fiber) — building the audience and estimating enrichment cost...",
+    message: "Audience Finder — querying Orange Slice (1.15B-profile DB) and estimating enrichment cost...",
     level: "info",
   });
 
@@ -235,7 +235,7 @@ async function prepareB2BAudience(
     await convex.mutation(api.campaigns.appendLog, {
       campaignId,
       agent: "audience",
-      message: `Fiber estimate ready: ${audienceEstimate.estimatedCredits} credits for up to ${audienceEstimate.listSize} prospects. Awaiting your approval before enrichment.`,
+      message: `Orange Slice audience ready: ${audienceEstimate.listSize} matches, ~${audienceEstimate.estimatedCredits} enrichment credits to pull contacts. Awaiting your approval.`,
       level: "warn",
     });
     return false;
@@ -284,16 +284,14 @@ async function runCreativeAndDistribution(
   demand: DemandForPipeline,
   isB2B: boolean
 ) {
-  const goose = new GooseworksClient();
-
   await convex.mutation(api.campaigns.appendLog, {
     campaignId,
     agent: "creative",
-    message: "Creative Studio — Gooseworks brand kit + ad gen + verify-product-image QC...",
+    message: "Creative Studio — brand kit + Orange Slice copy + gpt-image-1 ad + QC gate...",
     level: "info",
   });
 
-  const brandKit = await goose.buildBrandKit({
+  const brandKit = buildBrandKit({
     product: campaign.product,
     description: campaign.description,
     audience: campaign.audience,
