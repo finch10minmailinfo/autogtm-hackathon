@@ -79,10 +79,24 @@ export default function Home() {
   }
 
   return (
-    <main className="min-h-screen bg-[var(--background)] px-4 py-10 text-[var(--foreground)] md:px-8">
-      <div className="mx-auto max-w-6xl">
+    <main className="flex min-h-screen w-full overflow-y-auto px-4 py-8 text-[var(--ink)] md:py-12">
+      {/* central Liquid-Glass container: stays centered when content is small,
+          stretches vertically (and the page scrolls) when content grows.
+          Pointer drives the specular highlight (--gx/--gy). */}
+      <div
+        className="glass-card m-auto w-[92%] max-w-5xl p-5 sm:p-7 md:p-10"
+        onPointerMove={(e) => {
+          const r = e.currentTarget.getBoundingClientRect();
+          e.currentTarget.style.setProperty("--gx", `${((e.clientX - r.left) / r.width) * 100}%`);
+          e.currentTarget.style.setProperty("--gy", `${((e.clientY - r.top) / r.height) * 100}%`);
+        }}
+        onPointerLeave={(e) => {
+          e.currentTarget.style.setProperty("--gx", "28%");
+          e.currentTarget.style.setProperty("--gy", "0%");
+        }}
+      >
         {error && (
-          <div className="mb-6 rounded-xl border border-red-900/50 bg-red-950/30 px-4 py-3 text-sm text-red-200">
+          <div className="mb-6 rounded-xl border border-red-300/70 bg-red-50/70 px-4 py-3 text-sm text-red-700">
             {error}
           </div>
         )}

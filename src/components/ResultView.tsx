@@ -66,27 +66,27 @@ export function ResultView({ campaignId, onReset }: Props) {
   if (campaign === undefined) {
     return (
       <div className="flex min-h-[40vh] items-center justify-center">
-        <p className="mono text-xs text-neutral-500 animate-pulse">loading campaign…</p>
+        <p className="mono text-xs text-[var(--faint)] animate-pulse">loading campaign…</p>
       </div>
     );
   }
 
   if (campaign?.status === "failed") {
     return (
-      <div className="mx-auto max-w-lg space-y-5 rounded-2xl border border-red-900/50 bg-red-950/20 p-8 text-center">
-        <p className="mono text-xs text-red-400">PIPELINE FAILED</p>
-        <h2 className="text-xl font-semibold text-red-100">The growth pod hit an error</h2>
-        <p className="text-sm text-red-200/80 whitespace-pre-wrap">
+      <div className="mx-auto max-w-lg space-y-5 rounded-2xl border border-red-300 bg-red-50 p-8 text-center">
+        <p className="mono text-xs text-red-600">PIPELINE FAILED</p>
+        <h2 className="text-xl font-semibold text-red-800">The growth pod hit an error</h2>
+        <p className="text-sm text-red-700 whitespace-pre-wrap">
           {campaign.errorMessage ?? "An unexpected error stopped the pipeline before it finished."}
         </p>
-        <p className="text-xs text-neutral-500">
-          Tip: the pipeline runs end-to-end in sample mode with no API keys. Missing or invalid keys
-          fall back to sample data rather than failing — a hard failure usually means a network or
-          Convex connection issue.
+        <p className="text-xs text-[var(--faint)]">
+          Tip: with no API keys the pipeline runs in labeled sample mode. With keys connected, a real
+          API error surfaces here as an honest failure rather than fabricated data — usually a network,
+          credits, or Convex connection issue.
         </p>
         <button
           onClick={onReset}
-          className="w-full rounded-lg bg-[var(--orange)] px-4 py-3 text-sm font-semibold text-black"
+          className="w-full lex-pill px-4 py-3 text-sm font-semibold text-[var(--accent-ink)]"
         >
           Start a new campaign
         </button>
@@ -98,11 +98,11 @@ export function ResultView({ campaignId, onReset }: Props) {
     <div className="space-y-8">
       <header className="flex items-start justify-between gap-4">
         <div>
-          <p className="mono text-xs text-[var(--orange)]">RESULT {isB2B ? "· B2B" : "· B2C"}</p>
+          <p className="mono text-xs text-[var(--accent-text)]">RESULT {isB2B ? "· B2B" : "· B2C"}</p>
           <h2 className="text-2xl font-semibold">{demand?.angleHeadline ?? "Your campaign"}</h2>
-          <p className="text-sm text-neutral-400 mt-1">{demand?.reason}</p>
+          <p className="text-sm text-[var(--muted)] mt-1">{demand?.reason}</p>
         </div>
-        <button onClick={onReset} className="text-xs text-neutral-500 hover:text-white">
+        <button onClick={onReset} className="text-xs text-[var(--faint)] hover:text-[var(--ink)]">
           New campaign
         </button>
       </header>
@@ -118,8 +118,8 @@ export function ResultView({ campaignId, onReset }: Props) {
         />
 
         <div className="space-y-4">
-          <section className="rounded-xl border border-[var(--border)] bg-[var(--panel)] p-4">
-            <p className="mono text-xs text-neutral-500 mb-3">market insights (sourced)</p>
+          <section className="rounded-xl border border-[var(--border)] bg-[var(--panel)] shadow-[var(--shadow-sm)] p-4">
+            <p className="mono text-xs text-[var(--faint)] mb-3">market insights (sourced)</p>
             <div className="space-y-3 max-h-48 overflow-y-auto text-sm">
               {(signals ?? []).map((s, i) => (
                 <div
@@ -137,7 +137,7 @@ export function ResultView({ campaignId, onReset }: Props) {
                   }}
                 >
                   {s.type === "buying_intent" && (
-                    <span className="mono text-[10px] text-[var(--orange)]">INTENT · </span>
+                    <span className="mono text-[10px] text-[var(--accent-text)]">INTENT · </span>
                   )}
                   {s.type === "creative_gap" && (
                     <span className="mono text-[10px] text-[var(--violet)]">CREATIVE GAP · </span>
@@ -147,7 +147,7 @@ export function ResultView({ campaignId, onReset }: Props) {
                     href={s.sourceUrl}
                     target="_blank"
                     rel="noreferrer"
-                    className="text-xs text-neutral-500 hover:text-[var(--orange)] break-all"
+                    className="text-xs text-[var(--faint)] hover:text-[var(--accent-text)] break-all"
                   >
                     {s.sourceUrl}
                   </a>
@@ -159,8 +159,8 @@ export function ResultView({ campaignId, onReset }: Props) {
           {isB2B && prospects && prospects.length > 0 && (
             <section className="rounded-xl border border-[var(--orange)]/30 bg-[var(--orange)]/5 p-4">
               <div className="flex items-center justify-between mb-3">
-                <p className="mono text-xs text-[var(--orange)]">audience · fiber</p>
-                <span className="text-xs text-neutral-500">
+                <p className="mono text-xs text-[var(--accent-text)]">audience · orange slice</p>
+                <span className="text-xs text-[var(--faint)]">
                   {prospects.length} enriched{campaign?.isSampleProspects ? " (sample)" : ""}
                 </span>
               </div>
@@ -168,9 +168,9 @@ export function ResultView({ campaignId, onReset }: Props) {
                 {prospects.slice(0, 5).map((p) => (
                   <div key={p._id} className="border-l-2 border-[var(--orange)] pl-3">
                     <p className="font-medium">{p.name} — {p.role}</p>
-                    <p className="text-neutral-500 text-xs">{p.company} · {p.intentSignal}</p>
+                    <p className="text-[var(--faint)] text-xs">{p.company} · {p.intentSignal}</p>
                     {(p.workEmail || p.phone) && (
-                      <p className="text-neutral-500 text-xs">
+                      <p className="text-[var(--faint)] text-xs">
                         {[p.workEmail, p.phone].filter(Boolean).join(" · ")}
                       </p>
                     )}
@@ -180,15 +180,15 @@ export function ResultView({ campaignId, onReset }: Props) {
             </section>
           )}
 
-          <section className="rounded-xl border border-[var(--border)] bg-[var(--panel)] p-4 text-sm space-y-2">
+          <section className="rounded-xl border border-[var(--border)] bg-[var(--panel)] shadow-[var(--shadow-sm)] p-4 text-sm space-y-2">
             <div className="flex items-center justify-between">
-              <p className="mono text-xs text-neutral-500">broadcast caption</p>
+              <p className="mono text-xs text-[var(--faint)]">broadcast caption</p>
               {creative && (
                 <span
                   className={`mono text-[10px] px-2 py-0.5 rounded ${
                     qcStatus === "pass"
-                      ? "bg-green-950 text-green-400"
-                      : "bg-amber-950 text-amber-400"
+                      ? "bg-[var(--green)]/10 text-[var(--green)]"
+                      : "bg-[var(--amber)]/10 text-[var(--amber)]"
                   }`}
                 >
                   QC: {qcStatus} · {creativeSource}
@@ -198,31 +198,31 @@ export function ResultView({ campaignId, onReset }: Props) {
             <p className="whitespace-pre-wrap">{creative?.caption}</p>
             {!isB2B && <p className="text-[var(--violet)]">{creative?.hashtags?.join(" ")}</p>}
             {brandKit && (
-              <p className="text-xs text-neutral-500">
+              <p className="text-xs text-[var(--faint)]">
                 Brand kit: {brandKit.voice} · {brandKit.primaryColor}
               </p>
             )}
           </section>
 
           {qcBlocked && (
-            <div className="rounded-xl border border-amber-900/40 bg-amber-950/20 p-4 text-xs text-amber-200 space-y-3">
+            <div className="rounded-xl border border-[var(--amber)]/35 bg-[var(--amber)]/10 p-4 text-xs text-[var(--ink)] space-y-3">
               <p>
                 Creative QC ({qcStatus}) — review the creative before publish.
                 {creative?.qcReportUrl && (
-                  <span className="block mono text-neutral-500 mt-1">{creative.qcReportUrl}</span>
+                  <span className="block mono text-[var(--faint)] mt-1">{creative.qcReportUrl}</span>
                 )}
               </p>
               <button
                 onClick={handleOverrideQc}
                 disabled={overriding}
-                className="w-full rounded-lg border border-amber-600 py-2 text-amber-300 hover:bg-amber-950/40"
+                className="w-full rounded-lg border border-[var(--amber)] py-2 text-[var(--amber)] hover:bg-[var(--amber)]/15"
               >
                 {overriding ? "Approving…" : "Human override — approve for publish"}
               </button>
             </div>
           )}
 
-          <div className="rounded-xl border border-amber-900/40 bg-amber-950/20 p-4 text-xs text-amber-200">
+          <div className="rounded-xl border border-[var(--amber)]/35 bg-[var(--amber)]/10 p-4 text-xs text-[var(--ink)]">
             {isB2B
               ? "Human-in-the-loop: outreach drafts are for YOU to copy & send from your own LinkedIn. Never auto-DM strangers."
               : "Human-in-the-loop: nothing publishes automatically. Approving stages the post for you to review and publish from your own account."}
@@ -239,7 +239,7 @@ export function ResultView({ campaignId, onReset }: Props) {
                   key={postPlatform}
                   onClick={() => handleApprovePost(postPlatform)}
                   disabled={isApproving || isPublished || !canApprove}
-                  className="w-full rounded-lg bg-[var(--green)] px-4 py-3 text-sm font-semibold text-black disabled:opacity-50"
+                  className="lex-pill w-full px-4 py-3.5 text-sm disabled:opacity-50"
                 >
                   {isPublished
                     ? `Broadcast staged to ${postPlatform} ✓`
@@ -259,7 +259,7 @@ export function ResultView({ campaignId, onReset }: Props) {
             <h3 className="text-lg font-semibold">Personalized outreach drafts</h3>
             <button
               onClick={handleApproveAllOutreach}
-              className="text-xs text-[var(--orange)] hover:underline"
+              className="text-xs text-[var(--accent-text)] hover:underline"
             >
               Approve all drafts
             </button>
@@ -268,23 +268,23 @@ export function ResultView({ campaignId, onReset }: Props) {
             {outreach.map((row) => (
               <div
                 key={row._id}
-                className="rounded-xl border border-[var(--border)] bg-[var(--panel)] p-4 space-y-3"
+                className="rounded-xl border border-[var(--border)] bg-[var(--panel)] shadow-[var(--shadow-sm)] p-4 space-y-3"
               >
                 <div>
                   <p className="font-medium text-sm">
                     {row.prospect?.name} · {row.prospect?.role}
                   </p>
-                  <p className="text-xs text-neutral-500">{row.prospect?.company}</p>
+                  <p className="text-xs text-[var(--faint)]">{row.prospect?.company}</p>
                   <a
                     href={row.prospect?.linkedinUrl}
                     target="_blank"
                     rel="noreferrer"
-                    className="text-xs text-[var(--orange)] hover:underline"
+                    className="text-xs text-[var(--accent-text)] hover:underline"
                   >
                     View profile
                   </a>
                 </div>
-                <p className="text-sm whitespace-pre-wrap text-neutral-300">{row.draftMessage}</p>
+                <p className="text-sm whitespace-pre-wrap text-[var(--ink)]">{row.draftMessage}</p>
                 <button
                   onClick={() => handleApproveOutreach(row._id)}
                   disabled={row.state !== "draft"}
@@ -299,7 +299,7 @@ export function ResultView({ campaignId, onReset }: Props) {
       )}
 
       {posts && posts.length > 0 && (
-        <p className="mono text-xs text-neutral-500 text-center">
+        <p className="mono text-xs text-[var(--faint)] text-center">
           post state: {posts.map((p) => `${p.platform}=${p.state}`).join(" · ")}
         </p>
       )}
@@ -326,20 +326,18 @@ function PostPreview({
 
   return (
     <div
-      className={`mx-auto w-full max-w-sm rounded-2xl border border-[var(--border)] overflow-hidden ${
-        isIg ? "bg-black" : "bg-[#1b1f23]"
-      }`}
+      className="mx-auto w-full max-w-sm rounded-2xl border border-[var(--border)] overflow-hidden bg-[var(--surface)] shadow-[var(--shadow-md)]"
     >
       <div className="flex items-center gap-2 px-4 py-3 border-b border-[var(--border)]">
         <div className="h-8 w-8 rounded-full bg-gradient-to-br from-[var(--orange)] to-amber-600" />
         <div>
           <p className="text-sm font-medium">{product || "your_brand"}</p>
-          <p className="text-xs text-neutral-500">{isIg ? "Instagram" : "LinkedIn"} preview</p>
+          <p className="text-xs text-[var(--faint)]">{isIg ? "Instagram" : "LinkedIn"} preview</p>
         </div>
       </div>
 
       <div
-        className={`bg-neutral-900 flex items-center justify-center text-neutral-600 text-sm ${
+        className={`bg-[var(--field)] flex items-center justify-center text-[var(--faint)] text-sm ${
           isIg ? "aspect-[4/5]" : "aspect-[1.91/1]"
         }`}
       >
@@ -354,7 +352,7 @@ function PostPreview({
       <div className="p-4 space-y-2 text-sm">
         <p className="whitespace-pre-wrap">{caption}</p>
         {isIg && <p className="text-[var(--violet)] text-xs">{hashtags.join(" ")}</p>}
-        <button className="mt-2 rounded-full bg-white/10 px-4 py-1.5 text-xs">{cta}</button>
+        <button className="mt-2 rounded-full bg-[var(--sand)] px-4 py-1.5 text-xs">{cta}</button>
       </div>
     </div>
   );
