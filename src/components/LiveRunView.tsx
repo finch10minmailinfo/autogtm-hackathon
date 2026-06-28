@@ -5,13 +5,13 @@ import { useQuery } from "convex/react";
 import { api } from "convex/_generated/api";
 
 const B2C_AGENTS = [
-  { id: "market", label: "Market Pulse", color: "var(--amber)", desc: "Firecrawl reviews" },
+  { id: "market", label: "Market Pulse", color: "var(--amber)", desc: "Reddit + X + LinkedIn scrape" },
   { id: "demand", label: "Demand Gap", color: "var(--green)", desc: "Locks the angle" },
   { id: "creative", label: "Creative Studio", color: "var(--violet)", desc: "Image + caption" },
 ] as const;
 
 const B2B_AGENTS = [
-  { id: "market", label: "Market Pulse", color: "var(--amber)", desc: "Reviews + intent signals" },
+  { id: "market", label: "Market Pulse", color: "var(--amber)", desc: "Scrape + intent signals" },
   { id: "demand", label: "Demand Gap", color: "var(--green)", desc: "Locks the angle" },
   { id: "audience", label: "Audience Finder", color: "var(--orange)", desc: "Fiber estimate + enrichment" },
   { id: "creative", label: "Creative Studio", color: "var(--violet)", desc: "Post + outreach drafts" },

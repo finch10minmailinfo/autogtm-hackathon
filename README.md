@@ -1,22 +1,22 @@
 # AutoGTM
 
-Multi-agent GTM pipeline: market research → demand gap → creative → staged social post.
+Autonomous multi-agent GTM pipeline: market research → demand gap → audience → creative → staged distribution. Built for the YC AI Growth Hackathon (hosted by **Orange Slice**).
 
 ## Stack
 
-- **Next.js** (App Router) + React + Tailwind
+- **Next.js** (App Router, Turbopack) + React + Tailwind
 - **Convex** — real-time state machine + file storage
-- **OpenAI** — agent reasoning + image generation
-- **Gooseworks** — creative execution: brand kit, ad generation, QC gate (via `GooseworksClient` adapter)
-- **Fiber AI** — B2B audience building, enrichment, and buying signals
-- **Composio** — OAuth publishing to Instagram/LinkedIn
+- **Orange Slice** — the spine: structured AI reasoning (`generateObject`) + B2B audience over a 1.15B-profile LinkedIn database (`oceanSearchPeople`, real contacts)
+- **Fiber AI** — live buyer voice: Reddit + Twitter/X + LinkedIn post scraping for Market Pulse
+- **OpenAI** — `gpt-image-1` ad image generation
+
+**Role split:** Orange Slice = the brain + WHO · Fiber = live social signal · OpenAI = the visual · AutoGTM = orchestration
 
 ## Quick start
 
 ```bash
-cd autogtm
 npm install
-npx convex dev          # creates deployment + .env.local
+npx convex dev          # creates deployment + writes NEXT_PUBLIC_CONVEX_URL to .env.local
 npm run dev
 ```
 
@@ -27,71 +27,40 @@ Open [http://localhost:3000](http://localhost:3000).
 Copy `.env.example` to `.env.local` and fill in:
 
 ```
-OPENAI_API_KEY=
-FIRECRAWL_API_KEY=
-FIBER_API_KEY=
-COMPOSIO_API_KEY=
+ORANGESLICE_API_KEY=          # AI + B2B audience
+FIBER_API_KEY=                # live Reddit/X/LinkedIn buyer voice
+OPENAI_API_KEY=               # gpt-image-1 ad images
 NEXT_PUBLIC_CONVEX_URL=       # set by `npx convex dev`
 CONVEX_DEPLOYMENT=            # set by `npx convex dev`
 ```
 
-Without API keys, the app runs in **sample insights mode** — clearly labeled, no fabricated sources.
-
-## Gooseworks (creative execution)
-
-Install at the hackathon booth:
-
-```bash
-npx gooseworks install --codex
-```
-
-Verified skill slugs (from goose-skills repo):
-- `update-brand-kit` — on-brand context layer
-- `create-image-gpt-image-fal` — primary ad generation
-- `verify-product-image` — QC gate before `ready_to_post`
-- `competitor-ad-intelligence` — competitor creative gaps in Market Pulse
-
-Set `FAL_API_KEY` for Gooseworks-aligned image gen. Without Gooseworks login, pipeline uses sample/fallback paths clearly labeled.
-
-**Role split:** Fiber = WHO · Your agents = WHAT · Gooseworks = THE CREATIVE · AutoGTM = orchestration
-
-## B2B lane (Fiber AI)
-
-Toggle **B2B** on intake. Pipeline adds:
-
-1. **Market Pulse** — Firecrawl reviews + Fiber buying-intent signals
-2. **Demand Gap** — locks marketing angle
-3. **Audience Finder** (Agent 4) — Fiber creates/builds audience, estimates enrichment credits, then waits for approval
-4. **Fiber enrichment** — after explicit approval, exports real prospects into `prospects`
-5. **Creative Studio** — LinkedIn broadcast + per-prospect outreach drafts
-6. **Distribution** — approve broadcast + approve each outreach draft (you send manually)
-
-Status: `queued → researching → angle_ready → building_audience → audience_ready → creative_ready → ready_to_post → posted`
-
-Set `FIBER_API_KEY` from [fiber.ai/app/api](https://fiber.ai/app/api). Without it, sample prospects are clearly labeled.
-
-## B2C lane
-
-Original broadcast post flow (Instagram/LinkedIn). Skips Audience Finder.
+Without a key, the affected agent runs in **clearly-labeled sample mode** — no fabricated sources. When a key **is** present and a call fails, the pipeline reports an honest `failed` status instead of injecting sample data.
 
 ## Agent pipeline (B2C)
 
-1. **Market Pulse** — Firecrawl scrape → `signals` table (every claim has `sourceUrl`)
-2. **Demand Gap** — locks angle → `demand` table
-3. **Creative Studio** — gpt-image-1 + caption → `creatives` + Convex storage
-4. **Distribution** — Composio OAuth, human approval required → `posts` table
+1. **Market Pulse** — Fiber scrapes Reddit + X + LinkedIn → Orange Slice AI extracts why_buy/why_not/quotes/creative_gaps, each cited to a real `source_url` → `signals` table
+2. **Demand Gap** — Orange Slice AI locks the angle → `demand` table
+3. **Creative Studio** — Orange Slice AI writes copy, OpenAI `gpt-image-1` renders the ad, byte-level QC gate → `creatives` + Convex storage
+4. **Distribution** — human-in-the-loop: approve to stage, you publish from your own account → `posts` table
 
-Status flow: `queued → researching → angle_ready → creative_ready → ready_to_post → posted`
+Status: `queued → researching → angle_ready → creative_ready → ready_to_post → posted`
 
-## Demo script
+## B2B lane (Orange Slice audience)
 
-1. Enter a real product + 4 follow-up chips
-2. Launch — narrate live Convex state table + activity log
-3. Approve post — stages to connected account (demo mode without Composio)
+Toggle **B2B** on intake. Pipeline adds:
+
+1. **Market Pulse** — Fiber buyer voice + Fiber buying-intent signals
+2. **Demand Gap** — locks the marketing angle
+3. **Audience Finder** — Orange Slice parses the ICP into Ocean filters, previews the match count, then waits for approval before pulling contacts
+4. **Enrichment** — after approval, Orange Slice `oceanSearchPeople` exports real prospects with work emails/phones → `prospects`
+5. **Creative Studio** — LinkedIn broadcast + per-prospect outreach drafts (Orange Slice AI)
+6. **Distribution** — approve broadcast + each outreach draft; you send manually
+
+Status: `queued → researching → angle_ready → building_audience → audience_ready → creative_ready → ready_to_post → posted`
 
 ## Compliance
 
-- Posts only to user's own connected account
-- No cold-DM automation
-- Sample mode when scrape returns nothing
-- Explicit approval before publish
+- Posts only to the user's own account; nothing publishes automatically
+- No cold-DM automation — outreach drafts are for the user to send
+- Sample mode (clearly labeled) only when a key is absent
+- Explicit human approval before any publish

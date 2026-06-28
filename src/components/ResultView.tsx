@@ -207,7 +207,7 @@ export function ResultView({ campaignId, onReset }: Props) {
           {qcBlocked && (
             <div className="rounded-xl border border-amber-900/40 bg-amber-950/20 p-4 text-xs text-amber-200 space-y-3">
               <p>
-                Gooseworks QC ({qcStatus}) — review the creative before publish.
+                Creative QC ({qcStatus}) — review the creative before publish.
                 {creative?.qcReportUrl && (
                   <span className="block mono text-neutral-500 mt-1">{creative.qcReportUrl}</span>
                 )}
@@ -225,7 +225,7 @@ export function ResultView({ campaignId, onReset }: Props) {
           <div className="rounded-xl border border-amber-900/40 bg-amber-950/20 p-4 text-xs text-amber-200">
             {isB2B
               ? "Human-in-the-loop: outreach drafts are for YOU to copy & send from your own LinkedIn. Never auto-DM strangers."
-              : "Human-in-the-loop: nothing publishes automatically. Approving stages the post for review; connect Composio OAuth to publish it to your own account."}
+              : "Human-in-the-loop: nothing publishes automatically. Approving stages the post for you to review and publish from your own account."}
           </div>
 
           <div className="space-y-2">

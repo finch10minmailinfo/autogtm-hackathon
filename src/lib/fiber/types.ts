@@ -4,6 +4,20 @@ export type FiberIntentSignal = {
   company: string;
 };
 
+export type FiberScrapeChunk = {
+  channel: "reddit" | "twitter" | "linkedin";
+  source_url: string;
+  text: string;
+};
+
+export type FiberScrapeResult = {
+  chunks: FiberScrapeChunk[];
+  text: string;
+  sourceCount: number;
+  channels: string[];
+  isSample: boolean;
+};
+
 export type FiberProspect = {
   name: string;
   role: string;
