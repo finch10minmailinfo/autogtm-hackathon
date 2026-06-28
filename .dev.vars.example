@@ -1,0 +1,12 @@
+# Copy to .dev.vars and fill in your keys for local wrangler dev
+ORANGESLICE_API_KEY=os_key_placeholder
+FIBER_API_KEY=fib_key_placeholder
+OPENAI_API_KEY=sk-placeholder
+NEXT_PUBLIC_CONVEX_URL=https://your-convex-deployment.convex.cloud
+CONVEX_DEPLOYMENT=your-convex-deployment-name
+
+# Optional tuning
+OS_MAX_PROSPECTS=8
+OS_ENRICH_CONTACTS=true
+OS_CONTACT_SOURCES=bcr
+OS_CONTACT_TIMEOUT_MS=12000
