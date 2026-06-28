@@ -1,6 +1,6 @@
 "use client";
 
-import { B2B_DEFAULT, B2C_DEFAULT, IntakeData, Platform, PriceTier } from "@/lib/types";
+import { B2B_DEFAULT, B2C_DEFAULT, CRUITICAL_DEMO, IntakeData, Platform, PriceTier } from "@/lib/types";
 
 type Props = {
   data: IntakeData;
@@ -20,71 +20,138 @@ export function IntakeView({ data, onChange, onNext }: Props) {
   }
 
   return (
-    <div className="mx-auto max-w-2xl space-y-8">
-      <header className="space-y-3 text-center">
-        <div className="mx-auto h-24 w-24 rounded-full dot-sun agent-pulse" />
-        <p className="mono text-xs uppercase tracking-[0.3em] text-[var(--accent-text)]">LexAI</p>
-        <h1 className="text-3xl font-semibold tracking-tight">Signal to post in under two minutes</h1>
-        <p className="text-sm text-[var(--muted)]">
-          {data.mode === "b2b"
-            ? "Find buyers with Orange Slice, lock the angle, draft personalized outreach — you approve every send."
-            : "Type what you're selling. Agents read the market, lock the angle, and stage a post for your approval."}
-        </p>
-      </header>
+    <div className="grid items-center gap-8 lg:grid-cols-[1.02fr_0.98fr]">
+      <section className="space-y-7">
+        <header className="space-y-4">
+          <div className="h-20 w-20 rounded-full dot-sun agent-pulse" />
+          <p className="mono text-xs uppercase tracking-[0.3em] text-[var(--accent-text)]">LexAI</p>
+          <div className="space-y-3">
+            <h1 className="max-w-xl text-4xl font-semibold tracking-tight sm:text-5xl">
+              Launch a sourced GTM campaign while the trend is still alive.
+            </h1>
+            <p className="max-w-lg text-base text-[var(--muted)]">
+              Agents turn live market signals into a buyer angle, campaign creative, and human-approved
+              outreach in one guided run.
+            </p>
+          </div>
+        </header>
 
-      <div className="flex rounded-lg border border-[var(--border)] p-1 bg-[var(--panel)]">
-        <button
-          onClick={() => setMode("b2b")}
-          className={`flex-1 rounded-md py-2 text-sm font-medium transition ${
-            data.mode === "b2b" ? "bg-[var(--orange)] text-[var(--accent-ink)]" : "text-[var(--muted)]"
-          }`}
-        >
-          B2B — SaaS / tools
-        </button>
-        <button
-          onClick={() => setMode("b2c")}
-          className={`flex-1 rounded-md py-2 text-sm font-medium transition ${
-            data.mode === "b2c" ? "bg-[var(--orange)] text-[var(--accent-ink)]" : "text-[var(--muted)]"
-          }`}
-        >
-          B2C — drinks / devices
-        </button>
-      </div>
+        <div className="rounded-2xl border border-[var(--border)] bg-[var(--panel)] shadow-[var(--shadow-sm)] p-4 sm:p-5 space-y-4">
+          <div className="grid gap-2 rounded-full border border-[var(--border)] bg-[var(--field)] p-1 sm:grid-cols-2">
+            <button
+              onClick={() => setMode("b2b")}
+              className={`rounded-full px-4 py-2.5 text-sm font-semibold transition ${
+                data.mode === "b2b" ? "bg-[var(--orange)] text-[var(--accent-ink)]" : "text-[var(--muted)]"
+              }`}
+            >
+              Buyer outreach
+            </button>
+            <button
+              onClick={() => setMode("b2c")}
+              className={`rounded-full px-4 py-2.5 text-sm font-semibold transition ${
+                data.mode === "b2c" ? "bg-[var(--orange)] text-[var(--accent-ink)]" : "text-[var(--muted)]"
+              }`}
+            >
+              Social campaign
+            </button>
+          </div>
 
-      <div className="rounded-xl border border-[var(--border)] bg-[var(--panel)] shadow-[var(--shadow-sm)] p-6 space-y-4">
-        <label className="block space-y-2">
-          <span className="mono text-xs text-[var(--faint)]">PRODUCT NAME</span>
-          <input
-            className="w-full rounded-lg border border-[var(--border)] bg-[var(--field)] px-4 py-3 text-sm outline-none focus:border-[var(--orange)]"
-            placeholder={data.mode === "b2b" ? "e.g. LexAI" : "e.g. VitalCoach"}
-            value={data.product}
-            onChange={(e) => onChange({ ...data, product: e.target.value })}
-          />
-        </label>
+          <button
+            onClick={() => onChange(CRUITICAL_DEMO)}
+            className="w-full rounded-xl border border-[var(--border)] bg-[var(--sand)] px-4 py-3 text-left text-sm font-semibold text-[var(--ink)] transition hover:border-[var(--orange)]"
+          >
+            Use judge demo: Cruitical
+            <span className="block pt-1 text-xs font-normal text-[var(--muted)]">
+              Virtual work trials for screening software engineers.
+            </span>
+          </button>
 
-        <label className="block space-y-2">
-          <span className="mono text-xs text-[var(--faint)]">ONE-LINE DESCRIPTION</span>
-          <textarea
-            className="w-full rounded-lg border border-[var(--border)] bg-[var(--field)] px-4 py-3 text-sm outline-none focus:border-[var(--orange)] min-h-[88px]"
-            placeholder={
-              data.mode === "b2b"
-                ? "AI agent pod that turns market signals into GTM campaigns"
-                : "AI health coach that turns wearable data into daily actions"
-            }
-            value={data.description}
-            onChange={(e) => onChange({ ...data, description: e.target.value })}
-          />
-        </label>
+          <label className="block space-y-2">
+            <span className="mono text-xs text-[var(--faint)]">PRODUCT NAME</span>
+            <input
+              className="w-full rounded-lg border border-[var(--border)] bg-[var(--field)] px-4 py-3 text-sm outline-none focus:border-[var(--orange)]"
+              placeholder={data.mode === "b2b" ? "e.g. Cruitical" : "e.g. VitalCoach"}
+              value={data.product}
+              onChange={(e) => onChange({ ...data, product: e.target.value })}
+            />
+          </label>
 
-        <button
-          disabled={!canContinue}
-          onClick={onNext}
-          className="w-full lex-pill px-4 py-3 text-sm font-semibold text-[var(--accent-ink)] disabled:opacity-40 hover:brightness-110 transition"
-        >
-          Continue →
-        </button>
-      </div>
+          <label className="block space-y-2">
+            <span className="mono text-xs text-[var(--faint)]">ONE-LINE DESCRIPTION</span>
+            <textarea
+              className="w-full rounded-lg border border-[var(--border)] bg-[var(--field)] px-4 py-3 text-sm outline-none focus:border-[var(--orange)] min-h-[88px]"
+              placeholder={
+                data.mode === "b2b"
+                  ? "Automated virtual work trials for screening software engineers"
+                  : "AI health coach that turns wearable data into daily actions"
+              }
+              value={data.description}
+              onChange={(e) => onChange({ ...data, description: e.target.value })}
+            />
+          </label>
+
+          <button
+            disabled={!canContinue}
+            onClick={onNext}
+            className="w-full lex-pill px-4 py-3 text-sm font-semibold text-[var(--accent-ink)] disabled:opacity-40 hover:brightness-110 transition"
+          >
+            {data.mode === "b2b" ? "Build buyer campaign" : "Create social campaign"} →
+          </button>
+        </div>
+      </section>
+
+      <PipelinePreview mode={data.mode} product={data.product} />
     </div>
+  );
+}
+
+function PipelinePreview({ mode, product }: { mode: "b2b" | "b2c"; product: string }) {
+  const target = product.trim() || "your startup";
+  const steps = mode === "b2b"
+    ? [
+        ["Signal", "Find hiring pain and competitor complaints"],
+        ["Angle", "Lock the strongest buyer narrative"],
+        ["Audience", "Estimate and enrich real prospects"],
+        ["Ready", "Stage LinkedIn post + outreach drafts"],
+      ]
+    : [
+        ["Signal", "Read Reddit, X, and LinkedIn market voice"],
+        ["Angle", "Choose the demand gap worth posting"],
+        ["Creative", "Generate caption and ad visual"],
+        ["Ready", "Stage the post for human approval"],
+      ];
+
+  return (
+    <aside className="rounded-3xl border border-[var(--border)] bg-[var(--glass-softer)] p-5 shadow-[var(--shadow-md)]">
+      <div className="mb-5 flex items-start justify-between gap-4">
+        <div>
+          <p className="mono text-xs text-[var(--accent-text)]">Live campaign path</p>
+          <h2 className="mt-2 text-2xl font-semibold">{target}</h2>
+        </div>
+        <span className="rounded-full bg-[var(--sand)] px-3 py-1 text-xs font-semibold text-[var(--accent-text)]">
+          Human approved
+        </span>
+      </div>
+      <div className="space-y-3">
+        {steps.map(([label, detail], index) => (
+          <div key={label} className="flex gap-3 rounded-2xl border border-[var(--border)] bg-[var(--field)] p-3">
+            <div className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-[var(--sand)] text-xs font-bold text-[var(--accent-text)]">
+              {index + 1}
+            </div>
+            <div>
+              <p className="text-sm font-semibold">{label}</p>
+              <p className="text-sm text-[var(--muted)]">{detail}</p>
+            </div>
+          </div>
+        ))}
+      </div>
+      <div className="mt-5 rounded-2xl border border-[var(--border)] bg-[var(--panel)] p-4">
+        <p className="text-sm font-semibold">Judge takeaway</p>
+        <p className="mt-1 text-sm text-[var(--muted)]">
+          This is not copy generation. It is a sourced state machine from market signal to approved distribution.
+        </p>
+      </div>
+    </aside>
   );
 }
 
@@ -119,11 +186,11 @@ export function FollowUpView({ data, onChange, onLaunch, loading }: FollowUpProp
 
   return (
     <div className="mx-auto max-w-2xl space-y-6">
-      <h2 className="text-xl font-semibold">Quick qualifiers</h2>
+      <h2 className="text-xl font-semibold">Campaign qualifiers</h2>
       <p className="text-sm text-[var(--muted)]">
         {isB2B
-          ? "Your ICP goes straight to Orange Slice as a prospecting query."
-          : "Four taps — then the agent pod runs."}
+          ? "Tune the buyer list and differentiator before the audience estimate."
+          : "Tune the audience, platform, and price signal before creative generation."}
       </p>
 
       <section className="space-y-3">
@@ -218,7 +285,7 @@ export function FollowUpView({ data, onChange, onLaunch, loading }: FollowUpProp
         onClick={onLaunch}
         className="w-full lex-pill px-4 py-3 text-sm font-semibold text-[var(--accent-ink)] disabled:opacity-40 hover:brightness-110 transition"
       >
-        {loading ? "Launching…" : "Launch agent pod →"}
+        {loading ? "Launching…" : data.mode === "b2b" ? "Launch buyer campaign →" : "Launch social campaign →"}
       </button>
     </div>
   );

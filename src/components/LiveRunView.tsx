@@ -56,6 +56,7 @@ export function LiveRunView({ campaignId, product, onConfirmAudience, confirming
     ?.filter((log) => KNOWN_AGENTS.has(log.agent))
     .at(-1);
   const activeAgent = lastAgentLog?.agent ?? statusAgent;
+  const currentStep = getCurrentStep(status, isB2B);
 
   return (
     <div className="grid gap-6 lg:grid-cols-[1fr_360px]">
@@ -63,14 +64,29 @@ export function LiveRunView({ campaignId, product, onConfirmAudience, confirming
         <div>
           <p className="mono text-xs text-[var(--accent-text)]">LIVE RUN — {product}</p>
           <h2 className="text-2xl font-semibold mt-1">
-            Agent pod executing {isB2B ? "(B2B)" : "(B2C)"}
+            {currentStep.title}
           </h2>
+          <p className="mt-2 max-w-2xl text-sm text-[var(--muted)]">{currentStep.detail}</p>
           {(campaign?.isSampleData || campaign?.isSampleProspects) && (
             <p className="mt-2 text-xs text-[var(--amber)] border border-[var(--amber)]/35 bg-[var(--amber)]/10 rounded px-3 py-2">
               Sample mode active — claims labeled sample:// until API keys connect.
             </p>
           )}
         </div>
+
+        <section className="rounded-3xl border border-[var(--border)] bg-[var(--field)] p-5 shadow-[var(--shadow-md)]">
+          <div className="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <p className="mono text-xs text-[var(--accent-text)]">Now working</p>
+              <h3 className="mt-2 text-3xl font-semibold">{currentStep.focus}</h3>
+              <p className="mt-2 text-sm text-[var(--muted)]">{currentStep.outcome}</p>
+            </div>
+            <div className="rounded-2xl border border-[var(--border)] bg-[var(--panel)] p-4 text-sm">
+              <p className="mono text-xs text-[var(--faint)]">Progress</p>
+              <p className="mt-2 text-2xl font-semibold text-[var(--accent-text)]">{currentStep.progress}</p>
+            </div>
+          </div>
+        </section>
 
         <div className={`grid gap-3 ${isB2B ? "sm:grid-cols-2 lg:grid-cols-4" : "sm:grid-cols-3"}`}>
           {AGENTS.map((agent) => {
@@ -114,7 +130,7 @@ export function LiveRunView({ campaignId, product, onConfirmAudience, confirming
         </div>
       </div>
 
-      <ConvexStateTable
+      <BackendProofPanel
         status={status}
         signalCount={signals?.length ?? 0}
         prospectCount={prospects?.length ?? 0}
@@ -126,6 +142,61 @@ export function LiveRunView({ campaignId, product, onConfirmAudience, confirming
       />
     </div>
   );
+}
+
+function getCurrentStep(status: string, isB2B: boolean) {
+  if (status === "researching" || status === "queued") {
+    return {
+      title: "Reading live market signals",
+      focus: "Finding buyer pain",
+      detail: "Market Pulse is looking for complaints, buying intent, and creative gaps that can justify the campaign.",
+      outcome: "The next screen will show sourced claims, not generic copy.",
+      progress: "1 / 4",
+    };
+  }
+  if (status === "angle_ready") {
+    return {
+      title: isB2B ? "Buyer angle locked" : "Campaign angle locked",
+      focus: isB2B ? "Turning the angle into an ICP" : "Turning the angle into creative",
+      detail: "Demand Gap has selected the narrative with the clearest reason to act now.",
+      outcome: isB2B ? "Next: estimate and enrich the buyer list." : "Next: generate the staged post.",
+      progress: "2 / 4",
+    };
+  }
+  if (status === "building_audience" || status === "finding_audience") {
+    return {
+      title: "Resolving the buyer list",
+      focus: "Estimating audience quality",
+      detail: "Audience Finder is converting the plain-English ICP into a prospectable segment.",
+      outcome: "You approve enrichment before any contact data is pulled.",
+      progress: "3 / 4",
+    };
+  }
+  if (status === "audience_ready" || status === "creative_ready") {
+    return {
+      title: "Building the campaign asset",
+      focus: isB2B ? "Drafting post and outreach" : "Generating caption and visual",
+      detail: "Creative Studio is packaging the signal and angle into something ready for review.",
+      outcome: "Nothing publishes automatically. The final step is human approval.",
+      progress: "4 / 4",
+    };
+  }
+  if (status === "ready_to_post" || status === "posted") {
+    return {
+      title: "Campaign ready",
+      focus: "Review and approve",
+      detail: "The sourced campaign is staged for a human decision.",
+      outcome: "Approve the broadcast or copy the outreach drafts from the result screen.",
+      progress: "Ready",
+    };
+  }
+  return {
+    title: "Agent pod executing",
+    focus: "Coordinating the workflow",
+    detail: "The state machine is handing work between agents.",
+    outcome: "Live updates will appear as each agent writes to Convex.",
+    progress: "Live",
+  };
 }
 
 function AudiencePanel({
@@ -219,7 +290,7 @@ function agentColor(agent: string) {
   return "var(--orange)";
 }
 
-function ConvexStateTable({
+function BackendProofPanel({
   status,
   signalCount,
   prospectCount,
@@ -239,46 +310,43 @@ function ConvexStateTable({
   isSampleProspects?: boolean;
 }) {
   const rows = [
-    { table: "campaigns", field: "status", value: status },
-    { table: "signals", field: "count", value: String(signalCount) },
+    { label: "Campaign state", detail: "campaigns.status", value: status },
+    { label: "Research signals", detail: "signals.count", value: String(signalCount) },
     ...(isB2B
-      ? [{ table: "prospects", field: "count", value: String(prospectCount) }]
+      ? [{ label: "Audience records", detail: "prospects.count", value: String(prospectCount) }]
       : []),
     ...(isB2B && audienceEstimate !== undefined
-      ? [{ table: "audiences", field: "estimate", value: `${audienceEstimate} credits` }]
+      ? [{ label: "Enrichment estimate", detail: "audiences.estimate", value: `${audienceEstimate} credits` }]
       : []),
     ...(isB2B && audienceState
-      ? [{ table: "audiences", field: "state", value: audienceState }]
+      ? [{ label: "Audience gate", detail: "audiences.state", value: audienceState }]
       : []),
-    { table: "demand", field: "locked", value: ["angle_ready", "building_audience", "finding_audience", "audience_ready", "creative_ready", "ready_to_post", "posted"].includes(status) ? "yes" : "pending" },
-    { table: "creatives", field: "ready", value: status === "ready_to_post" || status === "posted" ? "yes" : "pending" },
-    { table: "meta", field: "sample_mode", value: isSample ? "true" : "false" },
+    { label: "Angle locked", detail: "demand.locked", value: ["angle_ready", "building_audience", "finding_audience", "audience_ready", "creative_ready", "ready_to_post", "posted"].includes(status) ? "yes" : "pending" },
+    { label: "Creative asset", detail: "creatives.ready", value: status === "ready_to_post" || status === "posted" ? "yes" : "pending" },
+    { label: "Data mode", detail: "meta.sample_mode", value: isSample ? "sample" : "live" },
     ...(isB2B
-      ? [{ table: "meta", field: "sample_prospects", value: isSampleProspects ? "true" : "false" }]
+      ? [{ label: "Prospect mode", detail: "meta.sample_prospects", value: isSampleProspects ? "sample" : "live" }]
       : []),
   ];
 
   return (
-    <div className="rounded-xl border border-[var(--border)] bg-[var(--panel)] shadow-[var(--shadow-sm)] p-4 h-fit">
-      <p className="mono text-xs text-[var(--faint)] mb-3">convex.state</p>
-      <table className="w-full text-xs mono">
-        <thead>
-          <tr className="text-[var(--faint)] border-b border-[var(--border)]">
-            <th className="text-left py-2">table</th>
-            <th className="text-left py-2">field</th>
-            <th className="text-right py-2">value</th>
-          </tr>
-        </thead>
-        <tbody>
-          {rows.map((row, i) => (
-            <tr key={`${row.table}-${row.field}-${i}`} className="border-b border-[var(--border)]/50">
-              <td className="py-2 text-[var(--muted)]">{row.table}</td>
-              <td className="py-2 text-[var(--faint)]">{row.field}</td>
-              <td className="py-2 text-right text-[var(--green)]">{row.value}</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+    <div className="rounded-2xl border border-[var(--border)] bg-[var(--panel)] shadow-[var(--shadow-sm)] p-4 h-fit">
+      <p className="mono text-xs text-[var(--accent-text)]">Backend proof</p>
+      <h3 className="mt-2 text-xl font-semibold">Convex orchestration is live</h3>
+      <p className="mt-1 text-sm text-[var(--muted)]">
+        Every agent writes to shared state, so the demo can prove real handoffs instead of a scripted spinner.
+      </p>
+      <div className="mt-4 space-y-2">
+        {rows.map((row, i) => (
+          <div key={`${row.detail}-${i}`} className="rounded-xl border border-[var(--border)] bg-[var(--field)] px-3 py-2">
+            <div className="flex items-center justify-between gap-3">
+              <span className="text-sm font-semibold">{row.label}</span>
+              <span className="text-sm font-semibold text-[var(--green)]">{row.value}</span>
+            </div>
+            <p className="mono mt-1 text-[10px] text-[var(--faint)]">{row.detail}</p>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }

@@ -15,10 +15,20 @@ export type IntakeData = {
 export type View = "intake" | "followup" | "live" | "result";
 
 export const B2B_DEFAULT: IntakeData = {
-  product: "AutoGTM",
-  description: "AI agent pod that turns market signals into publishable GTM campaigns",
-  audience: "VP Growth at Series A–B SaaS companies scaling outbound",
-  differentiator: "Collapses research → angle → creative → post in under 2 minutes",
+  product: "",
+  description: "",
+  audience: "",
+  differentiator: "",
+  platform: "linkedin",
+  priceTier: "mid",
+  mode: "b2b",
+};
+
+export const CRUITICAL_DEMO: IntakeData = {
+  product: "Cruitical",
+  description: "Automated virtual work trials for screening software engineers",
+  audience: "VP Engineering and talent leaders at Series A-B SaaS companies",
+  differentiator: "Replaces resume screens and LeetCode proxies with realistic async work trials",
   platform: "linkedin",
   priceTier: "mid",
   mode: "b2b",

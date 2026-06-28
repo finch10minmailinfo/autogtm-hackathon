@@ -107,6 +107,13 @@ export function ResultView({ campaignId, onReset }: Props) {
         </button>
       </header>
 
+      <CampaignTransformation
+        description={campaign?.description ?? "Product description"}
+        signal={signals?.[0]?.text}
+        angle={demand?.angleHeadline}
+        output={isB2B ? "LinkedIn broadcast + outreach drafts" : `${platform} post ready for approval`}
+      />
+
       <div className="grid gap-6 lg:grid-cols-2">
         <PostPreview
           platform={platform}
@@ -304,6 +311,36 @@ export function ResultView({ campaignId, onReset }: Props) {
         </p>
       )}
     </div>
+  );
+}
+
+function CampaignTransformation({
+  description,
+  signal,
+  angle,
+  output,
+}: {
+  description: string;
+  signal?: string;
+  angle?: string;
+  output: string;
+}) {
+  const steps = [
+    { label: "From", value: description },
+    { label: "Signal", value: signal ?? "Market evidence collected" },
+    { label: "Angle", value: angle ?? "Campaign angle selected" },
+    { label: "To", value: output },
+  ];
+
+  return (
+    <section className="grid gap-3 rounded-3xl border border-[var(--border)] bg-[var(--field)] p-4 shadow-[var(--shadow-sm)] md:grid-cols-4">
+      {steps.map((step) => (
+        <div key={step.label} className="rounded-2xl border border-[var(--border)] bg-[var(--panel)] p-3">
+          <p className="mono text-[10px] text-[var(--accent-text)]">{step.label}</p>
+          <p className="mt-2 line-clamp-3 text-sm font-semibold text-[var(--ink)]">{step.value}</p>
+        </div>
+      ))}
+    </section>
   );
 }
 
