@@ -1,36 +1,94 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# AutoGTM
 
-## Getting Started
+Multi-agent GTM pipeline: market research → demand gap → creative → staged social post.
 
-First, run the development server:
+## Stack
+
+- **Next.js** (App Router) + React + Tailwind
+- **Convex** — real-time state machine + file storage
+- **OpenAI** — agent reasoning + image generation
+- **Gooseworks** — creative execution: brand kit, ad generation, QC gate (via `GooseworksClient` adapter)
+- **Composio** — OAuth publishing to Instagram/LinkedIn
+
+## Quick start
 
 ```bash
+cd autogtm
+npm install
+npx convex dev          # creates deployment + .env.local
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000).
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Environment variables
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+Copy `.env.example` to `.env.local` and fill in:
 
-## Learn More
+```
+OPENAI_API_KEY=
+FIRECRAWL_API_KEY=
+COMPOSIO_API_KEY=
+NEXT_PUBLIC_CONVEX_URL=       # set by `npx convex dev`
+CONVEX_DEPLOYMENT=            # set by `npx convex dev`
+```
 
-To learn more about Next.js, take a look at the following resources:
+Without API keys, the app runs in **sample insights mode** — clearly labeled, no fabricated sources.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Gooseworks (creative execution)
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+Install at the hackathon booth:
 
-## Deploy on Vercel
+```bash
+npx gooseworks install --codex
+```
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+Verified skill slugs (from goose-skills repo):
+- `update-brand-kit` — on-brand context layer
+- `create-image-gpt-image-fal` — primary ad generation
+- `verify-product-image` — QC gate before `ready_to_post`
+- `competitor-ad-intelligence` — competitor creative gaps in Market Pulse
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Set `FAL_API_KEY` for Gooseworks-aligned image gen. Without Gooseworks login, pipeline uses sample/fallback paths clearly labeled.
+
+**Role split:** Orange Slice = WHO · Your agents = WHAT · Gooseworks = THE CREATIVE · AutoGTM = orchestration
+
+## B2B lane (Orange Slice)
+
+Toggle **B2B** on intake. Pipeline adds:
+
+1. **Market Pulse** — Firecrawl reviews + Orange Slice buying-intent signals
+2. **Demand Gap** — locks marketing angle
+3. **Audience Finder** (Agent 4) — Orange Slice enriches ICP → `prospects` table
+4. **Creative Studio** — LinkedIn broadcast + per-prospect outreach drafts
+5. **Distribution** — approve broadcast + approve each outreach draft (you send manually)
+
+Status: `queued → researching → angle_ready → finding_audience → audience_ready → creative_ready → ready_to_post → posted`
+
+Set `ORANGE_SLICE_API_KEY` from the Orange Slice booth. Without it, sample prospects are clearly labeled.
+
+## B2C lane
+
+Original broadcast post flow (Instagram/LinkedIn). Skips Audience Finder.
+
+## Agent pipeline (B2C)
+
+1. **Market Pulse** — Firecrawl scrape → `signals` table (every claim has `sourceUrl`)
+2. **Demand Gap** — locks angle → `demand` table
+3. **Creative Studio** — gpt-image-1 + caption → `creatives` + Convex storage
+4. **Distribution** — Composio OAuth, human approval required → `posts` table
+
+Status flow: `queued → researching → angle_ready → creative_ready → ready_to_post → posted`
+
+## Demo script
+
+1. Enter a real product + 4 follow-up chips
+2. Launch — narrate live Convex state table + activity log
+3. Approve post — stages to connected account (demo mode without Composio)
+
+## Compliance
+
+- Posts only to user's own connected account
+- No cold-DM automation
+- Sample mode when scrape returns nothing
+- Explicit approval before publish
