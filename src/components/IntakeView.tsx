@@ -23,11 +23,11 @@ export function IntakeView({ data, onChange, onNext }: Props) {
     <div className="mx-auto max-w-2xl space-y-8">
       <header className="space-y-3 text-center">
         <div className="mx-auto h-24 w-24 rounded-full dot-sun agent-pulse" />
-        <p className="mono text-xs uppercase tracking-[0.3em] text-[var(--orange)]">AutoGTM</p>
+        <p className="mono text-xs uppercase tracking-[0.3em] text-[var(--accent-text)]">LexAI</p>
         <h1 className="text-3xl font-semibold tracking-tight">Signal to post in under two minutes</h1>
-        <p className="text-sm text-neutral-400">
+        <p className="text-sm text-[var(--muted)]">
           {data.mode === "b2b"
-            ? "Find buyers with Fiber, lock the angle, draft personalized outreach — you approve every send."
+            ? "Find buyers with Orange Slice, lock the angle, draft personalized outreach — you approve every send."
             : "Type what you're selling. Agents read the market, lock the angle, and stage a post for your approval."}
         </p>
       </header>
@@ -36,7 +36,7 @@ export function IntakeView({ data, onChange, onNext }: Props) {
         <button
           onClick={() => setMode("b2b")}
           className={`flex-1 rounded-md py-2 text-sm font-medium transition ${
-            data.mode === "b2b" ? "bg-[var(--orange)] text-black" : "text-neutral-400"
+            data.mode === "b2b" ? "bg-[var(--orange)] text-[var(--accent-ink)]" : "text-[var(--muted)]"
           }`}
         >
           B2B — SaaS / tools
@@ -44,28 +44,28 @@ export function IntakeView({ data, onChange, onNext }: Props) {
         <button
           onClick={() => setMode("b2c")}
           className={`flex-1 rounded-md py-2 text-sm font-medium transition ${
-            data.mode === "b2c" ? "bg-[var(--orange)] text-black" : "text-neutral-400"
+            data.mode === "b2c" ? "bg-[var(--orange)] text-[var(--accent-ink)]" : "text-[var(--muted)]"
           }`}
         >
           B2C — drinks / devices
         </button>
       </div>
 
-      <div className="rounded-xl border border-[var(--border)] bg-[var(--panel)] p-6 space-y-4">
+      <div className="rounded-xl border border-[var(--border)] bg-[var(--panel)] shadow-[var(--shadow-sm)] p-6 space-y-4">
         <label className="block space-y-2">
-          <span className="mono text-xs text-neutral-500">PRODUCT NAME</span>
+          <span className="mono text-xs text-[var(--faint)]">PRODUCT NAME</span>
           <input
-            className="w-full rounded-lg border border-[var(--border)] bg-black px-4 py-3 text-sm outline-none focus:border-[var(--orange)]"
-            placeholder={data.mode === "b2b" ? "e.g. AutoGTM" : "e.g. VitalCoach"}
+            className="w-full rounded-lg border border-[var(--border)] bg-[var(--field)] px-4 py-3 text-sm outline-none focus:border-[var(--orange)]"
+            placeholder={data.mode === "b2b" ? "e.g. LexAI" : "e.g. VitalCoach"}
             value={data.product}
             onChange={(e) => onChange({ ...data, product: e.target.value })}
           />
         </label>
 
         <label className="block space-y-2">
-          <span className="mono text-xs text-neutral-500">ONE-LINE DESCRIPTION</span>
+          <span className="mono text-xs text-[var(--faint)]">ONE-LINE DESCRIPTION</span>
           <textarea
-            className="w-full rounded-lg border border-[var(--border)] bg-black px-4 py-3 text-sm outline-none focus:border-[var(--orange)] min-h-[88px]"
+            className="w-full rounded-lg border border-[var(--border)] bg-[var(--field)] px-4 py-3 text-sm outline-none focus:border-[var(--orange)] min-h-[88px]"
             placeholder={
               data.mode === "b2b"
                 ? "AI agent pod that turns market signals into GTM campaigns"
@@ -79,7 +79,7 @@ export function IntakeView({ data, onChange, onNext }: Props) {
         <button
           disabled={!canContinue}
           onClick={onNext}
-          className="w-full rounded-lg bg-[var(--orange)] px-4 py-3 text-sm font-semibold text-black disabled:opacity-40 hover:brightness-110 transition"
+          className="w-full lex-pill px-4 py-3 text-sm font-semibold text-[var(--accent-ink)] disabled:opacity-40 hover:brightness-110 transition"
         >
           Continue →
         </button>
@@ -120,14 +120,14 @@ export function FollowUpView({ data, onChange, onLaunch, loading }: FollowUpProp
   return (
     <div className="mx-auto max-w-2xl space-y-6">
       <h2 className="text-xl font-semibold">Quick qualifiers</h2>
-      <p className="text-sm text-neutral-400">
+      <p className="text-sm text-[var(--muted)]">
         {isB2B
-          ? "Your ICP goes straight to Fiber as a prospecting query."
+          ? "Your ICP goes straight to Orange Slice as a prospecting query."
           : "Four taps — then the agent pod runs."}
       </p>
 
       <section className="space-y-3">
-        <p className="mono text-xs text-neutral-500">
+        <p className="mono text-xs text-[var(--faint)]">
           {isB2B ? "IDEAL BUYER (ICP) — PLAIN ENGLISH" : "WHO IS IT FOR?"}
         </p>
         <div className="flex flex-wrap gap-2">
@@ -137,8 +137,8 @@ export function FollowUpView({ data, onChange, onLaunch, loading }: FollowUpProp
               onClick={() => onChange({ ...data, audience: chip, platform: isB2B ? "linkedin" : data.platform })}
               className={`rounded-full border px-3 py-1.5 text-xs transition ${
                 data.audience === chip
-                  ? "border-[var(--orange)] bg-[var(--orange)]/10 text-[var(--orange)]"
-                  : "border-[var(--border)] text-neutral-400"
+                  ? "border-[var(--orange)] bg-[var(--orange)]/10 text-[var(--accent-text)]"
+                  : "border-[var(--border)] text-[var(--muted)]"
               }`}
             >
               {chip}
@@ -146,7 +146,7 @@ export function FollowUpView({ data, onChange, onLaunch, loading }: FollowUpProp
           ))}
         </div>
         <input
-          className="w-full rounded-lg border border-[var(--border)] bg-[var(--panel)] px-3 py-2 text-sm"
+          className="w-full rounded-lg border border-[var(--border)] bg-[var(--panel)] shadow-[var(--shadow-sm)] px-3 py-2 text-sm"
           placeholder={isB2B ? "e.g. VP Growth at Series A–B SaaS scaling outbound" : "Or type custom audience"}
           value={data.audience}
           onChange={(e) => onChange({ ...data, audience: e.target.value })}
@@ -154,9 +154,9 @@ export function FollowUpView({ data, onChange, onLaunch, loading }: FollowUpProp
       </section>
 
       <section className="space-y-3">
-        <p className="mono text-xs text-neutral-500">ONE DIFFERENTIATOR</p>
+        <p className="mono text-xs text-[var(--faint)]">ONE DIFFERENTIATOR</p>
         <input
-          className="w-full rounded-lg border border-[var(--border)] bg-[var(--panel)] px-3 py-2 text-sm"
+          className="w-full rounded-lg border border-[var(--border)] bg-[var(--panel)] shadow-[var(--shadow-sm)] px-3 py-2 text-sm"
           placeholder={
             isB2B
               ? "e.g. Collapses research → angle → post in under 2 minutes"
@@ -169,7 +169,7 @@ export function FollowUpView({ data, onChange, onLaunch, loading }: FollowUpProp
 
       {!isB2B && (
         <section className="space-y-3">
-          <p className="mono text-xs text-neutral-500">PLATFORM</p>
+          <p className="mono text-xs text-[var(--faint)]">PLATFORM</p>
           <div className="flex flex-wrap gap-2">
             {PLATFORM_CHIPS.map((chip) => (
               <button
@@ -177,8 +177,8 @@ export function FollowUpView({ data, onChange, onLaunch, loading }: FollowUpProp
                 onClick={() => onChange({ ...data, platform: chip.value })}
                 className={`rounded-full border px-3 py-1.5 text-xs transition ${
                   data.platform === chip.value
-                    ? "border-[var(--orange)] bg-[var(--orange)]/10 text-[var(--orange)]"
-                    : "border-[var(--border)] text-neutral-400"
+                    ? "border-[var(--orange)] bg-[var(--orange)]/10 text-[var(--accent-text)]"
+                    : "border-[var(--border)] text-[var(--muted)]"
                 }`}
               >
                 {chip.label}
@@ -189,7 +189,7 @@ export function FollowUpView({ data, onChange, onLaunch, loading }: FollowUpProp
       )}
 
       <section className="space-y-3">
-        <p className="mono text-xs text-neutral-500">PRICE TIER</p>
+        <p className="mono text-xs text-[var(--faint)]">PRICE TIER</p>
         <div className="flex flex-wrap gap-2">
           {TIER_CHIPS.map((chip) => (
             <button
@@ -197,8 +197,8 @@ export function FollowUpView({ data, onChange, onLaunch, loading }: FollowUpProp
               onClick={() => onChange({ ...data, priceTier: chip.value })}
               className={`rounded-full border px-3 py-1.5 text-xs transition ${
                 data.priceTier === chip.value
-                  ? "border-[var(--orange)] bg-[var(--orange)]/10 text-[var(--orange)]"
-                  : "border-[var(--border)] text-neutral-400"
+                  ? "border-[var(--orange)] bg-[var(--orange)]/10 text-[var(--accent-text)]"
+                  : "border-[var(--border)] text-[var(--muted)]"
               }`}
             >
               {chip.label}
@@ -208,15 +208,15 @@ export function FollowUpView({ data, onChange, onLaunch, loading }: FollowUpProp
       </section>
 
       {isB2B && (
-        <p className="text-xs text-neutral-500 border border-[var(--border)] rounded-lg p-3">
-          B2B lane: LinkedIn broadcast + per-prospect outreach drafts. Fiber estimates credits first, then enriches real buyers only after your approval.
+        <p className="text-xs text-[var(--faint)] border border-[var(--border)] rounded-lg p-3">
+          B2B lane: LinkedIn broadcast + per-prospect outreach drafts. Orange Slice previews the audience first, then enriches real buyers only after your approval.
         </p>
       )}
 
       <button
         disabled={!canLaunch || loading}
         onClick={onLaunch}
-        className="w-full rounded-lg bg-[var(--orange)] px-4 py-3 text-sm font-semibold text-black disabled:opacity-40"
+        className="w-full lex-pill px-4 py-3 text-sm font-semibold text-[var(--accent-ink)] disabled:opacity-40 hover:brightness-110 transition"
       >
         {loading ? "Launching…" : "Launch agent pod →"}
       </button>

@@ -34,6 +34,13 @@ export type MarketScrapeResult = {
 
 const MAX_PROSPECTS = Number(process.env.OS_MAX_PROSPECTS ?? process.env.FIBER_MAX_PROSPECTS ?? 8);
 const ENRICH_CONTACTS = process.env.OS_ENRICH_CONTACTS !== "false";
+// Contact provider(s) for personContactGet. Default to BCR (the default waterfall
+// hits Findymail first, which 402s without Findymail credits). Override via env.
+const CONTACT_SOURCES = (process.env.OS_CONTACT_SOURCES ?? "bcr")
+  .split(",")
+  .map((s) => s.trim())
+  .filter(Boolean) as Array<"bcr">;
+const CONTACT_TIMEOUT_MS = Number(process.env.OS_CONTACT_TIMEOUT_MS ?? 12000);
 
 // Exact seniority values the Ocean server accepts.
 const SENIORITIES = [
@@ -357,27 +364,32 @@ export class OrangeSliceClient {
       };
     });
 
-    // Best-effort: pull real work emails. Stops early on the first credit/auth failure
-    // (e.g. Findymail 402) so we never fabricate contacts and never burn the whole run.
+    // Best-effort: pull real work emails. Each call is time-boxed, and we bail out
+    // after a credit error or two consecutive failures so a dead/credit-less provider
+    // can never stall the run for minutes. Never fabricates contacts.
     if (ENRICH_CONTACTS) {
-      let enrichmentBlocked = false;
+      let consecutiveFailures = 0;
       for (const prospect of prospects) {
-        if (enrichmentBlocked) break;
         if (prospect.linkedin_url.startsWith("orangeslice://")) continue;
         try {
-          const contact = await personContactGet({
-            linkedinUrl: prospect.linkedin_url,
-            required: ["work_email"],
-            // Force the BCR provider: the default contact-waterfall hits Findymail first,
-            // which 402s without Findymail credits. BCR returns real work emails on our plan.
-            sources: ["bcr"],
-          });
+          const contact = await withTimeout(
+            personContactGet({
+              linkedinUrl: prospect.linkedin_url,
+              required: ["work_email"],
+              sources: CONTACT_SOURCES,
+            }),
+            CONTACT_TIMEOUT_MS
+          );
           prospect.work_email = contact.work_emails?.[0] ?? prospect.work_email;
           prospect.phone = contact.work_phones?.[0] ?? prospect.phone;
+          consecutiveFailures = 0;
         } catch (err) {
           const msg = err instanceof Error ? err.message : String(err);
           console.warn("[orangeslice] contact enrichment skipped:", msg);
-          if (/402|credit/i.test(msg)) enrichmentBlocked = true;
+          // Credits exhausted / auth → no point trying the rest.
+          if (/402|credit|insufficient|unauthor/i.test(msg)) break;
+          // Transient/timeout failures: stop after two in a row.
+          if (++consecutiveFailures >= 2) break;
         }
       }
     }
@@ -437,6 +449,23 @@ async function findWorkingFilters(pruned: OceanParams): Promise<{ params: OceanP
     if (total > 0) return last;
   }
   return last;
+}
+
+/** Reject a promise if it doesn't settle within `ms` — bounds slow provider calls. */
+function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T> {
+  return new Promise<T>((resolve, reject) => {
+    const id = setTimeout(() => reject(new Error(`timeout after ${ms}ms`)), ms);
+    promise.then(
+      (v) => {
+        clearTimeout(id);
+        resolve(v);
+      },
+      (e) => {
+        clearTimeout(id);
+        reject(e);
+      }
+    );
+  });
 }
 
 function decodeAudienceRef(ref: string): {

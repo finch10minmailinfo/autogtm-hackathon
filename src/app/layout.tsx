@@ -1,10 +1,11 @@
 import type { Metadata } from "next";
 import { ConvexClientProvider } from "@/components/ConvexClientProvider";
+import { ChromeBackground } from "@/components/ChromeBackground";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "AutoGTM — Signal to post in 2 minutes",
-  description: "AI agent pod: market research → angle → creative → staged post",
+  title: "LexAI — Signal to post in 2 minutes",
+  description: "Autonomous multi-agent growth pod: market research → angle → creative → staged post",
 };
 
 export default function RootLayout({
@@ -13,8 +14,9 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className="h-full antialiased">
-      <body className="min-h-full flex flex-col">
+    <html lang="en" className="h-full antialiased" suppressHydrationWarning>
+      <body className="min-h-full">
+        <ChromeBackground />
         <ConvexClientProvider>{children}</ConvexClientProvider>
       </body>
     </html>
