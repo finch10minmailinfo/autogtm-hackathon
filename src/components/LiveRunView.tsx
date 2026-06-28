@@ -17,6 +17,9 @@ const B2B_AGENTS = [
   { id: "creative", label: "Creative Studio", color: "var(--violet)", desc: "Post + outreach drafts" },
 ] as const;
 
+// Agent ids that map to a card in the live pod (excludes the "system" channel).
+const KNOWN_AGENTS = new Set(["market", "demand", "audience", "creative"]);
+
 type Props = {
   campaignId: Id<"campaigns">;
   product: string;
@@ -35,16 +38,24 @@ export function LiveRunView({ campaignId, product, onConfirmAudience, confirming
   const AGENTS = isB2B ? B2B_AGENTS : B2C_AGENTS;
   const status = campaign?.status ?? "queued";
 
-  const activeAgent =
+  // Status only flips at phase boundaries, so it lags the work in progress
+  // (e.g. in B2C, creative runs while status is still `angle_ready`). Each agent
+  // logs right before it starts, so the most recent agent log is the truest
+  // "who's working now" signal. Fall back to status before any logs arrive.
+  const statusAgent =
     status === "researching"
       ? "market"
       : status === "angle_ready"
-        ? "demand"
+        ? (isB2B ? "demand" : "creative")
         : status === "building_audience" || status === "finding_audience"
           ? "audience"
           : status === "audience_ready" || status === "creative_ready" || status === "ready_to_post"
             ? "creative"
             : "system";
+  const lastAgentLog = logs
+    ?.filter((log) => KNOWN_AGENTS.has(log.agent))
+    .at(-1);
+  const activeAgent = lastAgentLog?.agent ?? statusAgent;
 
   return (
     <div className="grid gap-6 lg:grid-cols-[1fr_360px]">
